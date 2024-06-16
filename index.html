@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Goofy Mania V2</title>
+        <link id="skin-style" rel="stylesheet">
+        <link rel="stylesheet" href="./main.css">
+        <script src="./main.js"></script>
+        <script src="./game.js"></script>
+    </head>
+    <body>
+        <div class="game" id="game"></div>
+        <script>
+            loadSkin("/skins/default");
+            // for testing
+            const mapPath = "./maps/1";
+            fetch(`${mapPath}/map.json`).then(i => i.json()).then(async map => {
+                const level = map.levels[0];
+                level.data = await getLevelData(mapPath, level);
+                startGame(document.getElementById("game"), level);
+            });
+        </script>
+    </body>
+</html>
