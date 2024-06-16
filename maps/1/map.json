@@ -1,0 +1,19 @@
+{
+    "name": "Endless Adventure",
+    "artist": "Kobaryo",
+    "songFile": "song.mp3",
+    "coverFile": "cover.jpg",
+    "mappers": [
+        {
+            "name": "Lyall",
+            "link": null
+        }
+    ],
+    "levels": [
+        {
+            "name": "Easy",
+            "keys": 4,
+            "file": "easy.json"
+        }
+    ]
+}
