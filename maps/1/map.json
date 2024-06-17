@@ -3,6 +3,8 @@
     "artist": "Kobaryo",
     "songFile": "song.mp3",
     "coverFile": "cover.jpg",
+    "offset": 0,
+    "bpm": 116,
     "mappers": [
         {
             "name": "Lyall",
@@ -11,6 +13,7 @@
     ],
     "levels": [
         {
+            "scrollSpeed": 17,
             "name": "Easy",
             "keys": 4,
             "file": "easy.json"

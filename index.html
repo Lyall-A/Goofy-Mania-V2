@@ -9,15 +9,22 @@
         <script src="./game.js"></script>
     </head>
     <body>
-        <div class="game" id="game"></div>
+        <div id="game-container"></div>
         <script>
+            const settings = {
+                scrollSpeed: 17,
+                keybinds: {
+                    "4-keys": ["d","f","j","k"],
+                    "7-keys": ["s","d","f"," ","j","k","l"]
+                }
+            }
             loadSkin("/skins/default");
             // for testing
             const mapPath = "./maps/1";
-            fetch(`${mapPath}/map.json`).then(i => i.json()).then(async map => {
+            getMapData(mapPath).then(async map => {
                 const level = map.levels[0];
                 level.data = await getLevelData(mapPath, level);
-                startGame(document.getElementById("game"), level);
+                startGame(document.getElementById("game-container"), map, level, settings);
             });
         </script>
     </body>
