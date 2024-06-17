@@ -3,14 +3,15 @@ async function getLevelData(mapPath, level) {
 }
 
 async function getMapData(mapPath) {
-    const map = await fetch(`${mapPath}/map.json`).then(i => i.json());
-    map.songData = map.songData || await fetch(`${mapPath}/${map.songFile}`).then(i => i.blob());
-    map.coverData = map.coverData || await fetch(`${mapPath}/${map.coverFile}`).then(i => i.blob());
+    const map = await fetch(`${mapPath}/map.gmm`).then(i => i.json());
+    map.audioData = map.audioData || map.audioFile ? await fetch(`${mapPath}/${map.audioFile}`).then(i => i.blob()) : null;
+    map.coverData = map.coverData || map.coverFile ? await fetch(`${mapPath}/${map.coverFile}`).then(i => i.blob()) : null;
+    map.backgroundData = map.backgroundData || map.backgroundFile ? await fetch(`${mapPath}/${map.backgroundFile}`).then(i => i.blob()) : null;
     return map;
 }
 
 async function loadSkin(skinPath) {
-    const skin = await fetch(`${skinPath}/skin.json`).then(i => i.json());
+    const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
 
     const styleElement = document.getElementById("skin-style");
     styleElement.rel = "stylesheet";

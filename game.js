@@ -25,35 +25,39 @@ async function startGame(gameContainer, map, level, settings) {
     // });
 
     // THIS IS JUST TEMP SHIT FRRRRRR IMA MAKE THIS BETTER (PROBABLY NOT)
-    const songURL = URL.createObjectURL(map.songData);
-    const song = new Audio(songURL);
-    song.onended = () => URL.revokeObjectURL(songURL);
-    song.onloadeddata = () => console.log(song.duration);
-    song.volume = 0.05; // kill oyurself
-    await song.play();
+    if (map.backgroundData) {
+        const backgroundURL = URL.createObjectURL(map.backgroundData);
+        gameContainer.style.backgroundImage = `url("${backgroundURL}")`;
+    }
+    const audioURL = URL.createObjectURL(map.audioData);
+    const audio = new Audio(audioURL);
+    audio.onended = () => URL.revokeObjectURL(audioURL);
+    audio.onloadeddata = () => console.log(audio.duration);
+    audio.volume = 0.5; // kill oyurself
+    audio.playbackRate = globalSpeed;
+    await audio.play();
 
     setTimeout(() => {
         let lastBeat = 0;
-        const getNextNotes = index => {
-            const nextNotes = level.data[index];
-            if (!nextNotes) return;
-            const notes = nextNotes[0] || nextNotes.notes;
-            const beat = nextNotes[1] || nextNotes.beat;
+        const getNextNote = index => {
+            const nextNote = level.data[index];
+            if (!nextNote) return;
+            const row = nextNote[0];
+            const sliderHeight = nextNote[1];
+            const beat = nextNote[2];
 
             setTimeout(() => {
                 lastBeat = beat;
-                notes.forEach((note, index) => {
-                    if (note) spawnNote(index, note);
-                });
-                getNextNotes(index + 1);
+                spawnNote(row, sliderHeight);
+                getNextNote(index + 1);
             }, ((beat - lastBeat) / map.bpm) * 60 * 1000);
         }
-        getNextNotes(0);
+        getNextNote(0);
     }, map.offset);
 
     // ----
 
-    function spawnNote(rowIndex) {
+    function spawnNote(row, sliderHeight) {
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
         let top = 0;
@@ -63,12 +67,12 @@ async function startGame(gameContainer, map, level, settings) {
             top += 1 * deltaTime * globalSpeed * ((settings.scrollSpeed || level.scrollSpeed) / 10);
             noteElement.style.top = `${top}px`;
             if (top >= screen.availHeight) {
-                if (!rows[rowIndex].notesElement.contains(noteElement)) return;
+                if (!rows[row - 1].notesElement.contains(noteElement)) return;
                 noteElement.remove();
             } else nextFrame();
         });
 
-        rows[rowIndex].notesElement.appendChild(noteElement);
+        rows[row - 1].notesElement.appendChild(noteElement);
     }
 
     function hitNote(note) {

@@ -1,11 +1,13 @@
 #game-container {
-    --key-width: 100px;
-    --key-height: 100px;
+    /* --key-width: 100px; */
+    --key-width: 10vh;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 .game {
@@ -15,7 +17,7 @@
 
 .rows {
     display: flex;
-    background-color: grey;
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .row {
@@ -33,11 +35,10 @@
 
 .note {
     will-change: top;
-    background-color: blue;
+    background-color: rgb(140, 18, 255);
     transform: translateY(-100%);
     position: absolute;
     aspect-ratio: 1;
-    border: 2px solid green;
     border-radius: 50%;
     min-width: var(--key-width);
     min-height: auto;
@@ -50,9 +51,9 @@
     min-height: auto;
     aspect-ratio: 1;
     border-radius: 50%;
-    border: 2px solid red;
+    border: 2px solid rgb(182, 182, 182);
 }
 
 .key.pressed {
-    background-color: red;
+    background-color: rgb(206, 206, 206);
 }

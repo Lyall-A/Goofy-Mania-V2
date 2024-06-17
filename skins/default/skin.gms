@@ -1,0 +1,3 @@
+{
+    "styleFile": "skin.css"
+}

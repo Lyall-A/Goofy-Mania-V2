@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Goofy Mania V2</title>
         <link id="skin-style" rel="stylesheet">
         <link rel="stylesheet" href="./main.css">
@@ -20,9 +21,10 @@
             }
             loadSkin("/skins/default");
             // for testing
-            const mapPath = "./maps/1";
+            const mapPath = "./maps/2";
             getMapData(mapPath).then(async map => {
-                const level = map.levels[1];
+                console.log(map.levels);
+                const level = map.levels.find(i => i.name == "LV. [HARD]");
                 level.data = await getLevelData(mapPath, level);
                 startGame(document.getElementById("game-container"), map, level, settings);
             });
