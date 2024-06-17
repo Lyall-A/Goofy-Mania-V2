@@ -6,7 +6,7 @@
         <link id="skin-style" rel="stylesheet">
         <link rel="stylesheet" href="./main.css">
         <script src="./main.js"></script>
-        <script src="./game.js"></script>
+        <script src="./Game.js"></script>
     </head>
     <body>
         <div id="game-container"></div>
@@ -22,7 +22,7 @@
             // for testing
             const mapPath = "./maps/1";
             getMapData(mapPath).then(async map => {
-                const level = map.levels[0];
+                const level = map.levels[1];
                 level.data = await getLevelData(mapPath, level);
                 startGame(document.getElementById("game-container"), map, level, settings);
             });

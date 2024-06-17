@@ -1,8 +1,18 @@
 let globalSpeed = 1;
 
+class Game {
+    constructor(gameContainer, map, level, settings) {
+        this.gameContainer = gameContainer;
+        this.map = map;
+        this.level = level;
+        this.settings = settings;
+    }
+}
+
 async function startGame(gameContainer, map, level, settings) {
     // Variables
     let gameElement;
+    const recordedData = [];
     const rows = [];
 
     setupGame();
@@ -155,4 +165,9 @@ async function startGame(gameContainer, map, level, settings) {
 
         requestAnimationFrame(loop);
     }
+}
+
+function convertV1ToV2(v1, min) {
+    const v2 = v1.map(i => ([i.notes, i.beat]));
+    return min ? JSON.stringify(v2) : v2;
 }

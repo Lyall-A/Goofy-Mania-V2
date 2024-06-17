@@ -17,6 +17,12 @@
             "name": "Easy",
             "keys": 4,
             "file": "easy.json"
+        },
+        {
+            "scrollSpeed": 17,
+            "name": "EXTREME",
+            "keys": 4,
+            "file": "extreme.json"
         }
     ]
 }
