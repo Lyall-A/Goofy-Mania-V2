@@ -11,23 +11,26 @@
     </head>
     <body>
         <div id="game-container"></div>
+        <button onclick="doThing()">CLICK ME</button>
         <script>
-            const settings = {
-                scrollSpeed: 17,
-                keybinds: {
-                    "4-keys": ["d","f","j","k"],
-                    "7-keys": ["s","d","f"," ","j","k","l"]
+            function doThing() {
+                const settings = {
+                    scrollSpeed: 17,
+                    keybinds: {
+                        "4-keys": ["d","f","j","k"],
+                        "7-keys": ["s","d","f"," ","j","k","l"]
+                    }
                 }
+                loadSkin("/skins/default");
+                // for testing
+                const mapPath = "./maps/2";
+                getMapData(mapPath).then(async map => {
+                    console.log(map.levels);
+                    const level = map.levels.find(i => i.name == "LV. [HARD]");
+                    level.data = await getLevelData(mapPath, level);
+                    startGame(document.getElementById("game-container"), map, level, settings);
+                });
             }
-            loadSkin("/skins/default");
-            // for testing
-            const mapPath = "./maps/2";
-            getMapData(mapPath).then(async map => {
-                console.log(map.levels);
-                const level = map.levels.find(i => i.name == "LV. [HARD]");
-                level.data = await getLevelData(mapPath, level);
-                startGame(document.getElementById("game-container"), map, level, settings);
-            });
         </script>
     </body>
 </html>
