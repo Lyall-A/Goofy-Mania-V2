@@ -1,0 +1,29 @@
+AudioFile: audio.mp3
+SongPreviewTime: 57000
+BackgroundFile: b.png
+MapId: 106751
+MapSetId: 24015
+Mode: Keys4
+Title: Bad Apple!!
+Artist: masayoshi minoshima feat. nomico
+Source: Lovelight
+Tags: ln, longnote, jumpstream, minijack, chordjack, electronic, touhou 4, 東方幻想郷　～ Lotus Land Story, jindax, subtir, zarogd
+Creator: averry
+DifficultyName: when the apple is bad (Insane!!)
+Description: Created at 1673294975000
+BPMDoesNotAffectScrollVelocity: true
+InitialScrollVelocity: 1
+EditorLayers: []
+CustomAudioSamples: []
+SoundEffects: []
+TimingPoints:
+- StartTime: 1349
+  Bpm: 138
+SliderVelocities: []
+HitObjects:
+- StartTime: 1349
+  Lane: 4
+  KeySounds: []
+- StartTime: 1349
+  Lane: 3
+  KeySounds: []

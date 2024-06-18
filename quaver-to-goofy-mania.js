@@ -37,7 +37,7 @@ fs.readdirSync(quaverMapPath).forEach(file => {
     const timingPoints = parsedQuaverLevel.TimingPoints;
     const hitObjects = parsedQuaverLevel.HitObjects;
 
-    const bpm = timingPoints[0].Bpm
+    const bpm = timingPoints[0].Bpm; // TODO: probably bad
 
     const audioFilePath = path.join(quaverMapPath, audioFile);
     const backgroundFilePath = path.join(quaverMapPath, backgroundFile);
@@ -54,9 +54,9 @@ fs.readdirSync(quaverMapPath).forEach(file => {
     map.mappers.push({ name: creator });
     map.bpm = bpm;
     map.offset = 0;
-
+    
     map.levels.push({
-        scrollSpeed: 17,
+        scrollSpeed: 17, // TODO...
         name: difficultyName,
         keys,
         file: `${mapId}.gml`
@@ -64,7 +64,7 @@ fs.readdirSync(quaverMapPath).forEach(file => {
 
     const levelData = [];
     hitObjects.filter(i => i.Lane && i.StartTime).forEach(hitObject => levelData.push([hitObject.Lane, 0, msToBeat(hitObject.StartTime, bpm)]));
-
+    
     fs.writeFileSync(path.join(goofyManiaMapPath, `${mapId}.gml`), JSON.stringify(levelData));
 });
 
@@ -81,17 +81,23 @@ function parseQuaverLevel(level) {
     let lastArray;
     splitNewLines.forEach(line => {
         const keyValueMatch = line.match(/^([^ ]*): (.*)/);
-        if (keyValueMatch) return parsed[keyValueMatch[1]] = parseString(keyValueMatch[2]);
+        if (keyValueMatch) {
+            if (Object.keys(lastObject || {}).length && lastArray) lastArray.push(lastObject);
+            lastObject = { };
+            return parsed[keyValueMatch[1]] = parseString(keyValueMatch[2]);
+        }
 
         const keyArrayMatch = line.match(/^([^ ]*):/);
         if (keyArrayMatch) {
+            if (Object.keys(lastObject || {}).length && lastArray) lastArray.push(lastObject);
+            lastObject = { };
             lastArray = [ ];
             return parsed[keyArrayMatch[1]] = lastArray;
         }
 
         const keyObjectMatch = line.match(/- (.*): (.*)/);
         if (keyObjectMatch) {
-            if (lastObject) lastArray.push(lastObject);
+            if (Object.keys(lastObject || {}).length && lastArray) lastArray.push(lastObject);
             lastObject = { };
             return lastObject[keyObjectMatch[1]] = parseString(keyObjectMatch[2]);
         }
@@ -99,7 +105,10 @@ function parseQuaverLevel(level) {
         const objectKeyValueMatch = line.match(/  (.*): (.*)/);
         if (objectKeyValueMatch) return lastObject[objectKeyValueMatch[1]] = parseString(objectKeyValueMatch[2]);
     });
-    if (lastObject) lastArray.push(lastObject);
+
+    if (Object.keys(lastObject || {}).length && lastArray) lastArray.push(lastObject);
+    lastObject = { };
+
     return parsed;
 }
 
