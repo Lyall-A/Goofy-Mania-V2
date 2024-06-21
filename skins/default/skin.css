@@ -1,6 +1,5 @@
 #game-container {
     --key-width: 100px;
-    /* --key-width: 125px; */
     --key-margin: 5px;
     display: flex;
     justify-content: center;
@@ -52,7 +51,7 @@
     z-index: 0;
     margin-bottom: 75px;
     width: var(--key-width);
-    height: auto;
+    min-height: var(--key-width);
     aspect-ratio: 1;
     border-radius: 50%;
     border: 2px solid rgb(182, 182, 182);
