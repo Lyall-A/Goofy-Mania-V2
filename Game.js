@@ -1,13 +1,23 @@
-let globalSpeed = 1;
-
 class Game {
-    constructor(gameContainer, map, level, settings) {
+    constructor(gameContainer, map, level, userSettings, gameSettings = {
+        globalSpeed: 1,
+        points: [
+            { distance: 25, points: 350 },
+            { distance: 50, points: 300 },
+            { distance: 100, points: 200 },
+            { distance: 150, points: 100 },
+            { distance: 175, points: 50 },
+            { distance: 200, points: 0, isBad: true },
+        ]
+    }) {
         this.gameContainer = gameContainer;
         this.map = map;
         this.level = level;
-        this.settings = settings;
+        this.userSettings = userSettings;
+        this.gameSettings = gameSettings;
 
-        this.rows = [];
+        this.msToKey = 700; // TODO: add ms to key to spawn keys early
+        this.lanes = [];
 
         this.points = 0;
         this.multiplier = 0;
@@ -19,6 +29,22 @@ class Game {
     }
 
     async start() {
+        // Game loop
+        this.gameLoop((deltaTime, loop, fps) => {
+            this.lanes.forEach((lane, laneIndex) => {
+                lane.notes.forEach(note => {
+                    note.top += 1 * deltaTime * this.gameSettings.globalSpeed * ((this.userSettings.scrollSpeed || this.level.scrollSpeed) / 10);
+                    note.noteElement.style.top = `${note.top}px`;
+                    if (note.noteElement.getBoundingClientRect().y >= screen.availHeight) {
+                        if (!lane.notesElement.contains(note.noteElement)) return;
+                        this.removeClosestNote(laneIndex);
+                    }
+                });
+            });
+
+            loop();
+        });
+
         // THIS IS JUST TEMP SHIT FRRRRRR IMA MAKE THIS BETTER (PROBABLY NOT)
         if (this.map.backgroundData) {
             const backgroundURL = URL.createObjectURL(this.map.backgroundData);
@@ -28,7 +54,7 @@ class Game {
         const audio = new Audio(audioURL);
         audio.onloadeddata = () => URL.revokeObjectURL(audioURL);
         audio.volume = 0.25; // kill oyurself
-        audio.playbackRate = globalSpeed;
+        audio.playbackRate = this.gameSettings.globalSpeed;
         await audio.play();
 
         setTimeout(() => {
@@ -36,80 +62,74 @@ class Game {
             const getNextNote = index => {
                 const nextNote = this.level.data[index];
                 if (!nextNote) return;
-                const row = nextNote[0];
+                const lane = nextNote[0];
                 const sliderHeight = nextNote[1];
                 const beat = nextNote[2];
 
-                // TODO work
-                // gameLoop((deltaTime, nextFrame, fps) => {
-                //     if (Date.now() - time <= timeout) return nextFrame();
-                //     lastBeat = beat;
-                //     spawnNote(row, sliderHeight);
-                //     getNextNote(index + 1);
-                // });
                 setTimeout(() => {
                     lastBeat = beat;
-                    this.spawnNote(row, sliderHeight);
-                    getNextNote(index + 1);
-                }, ((beat - lastBeat) / this.map.bpm) * 60 * 1000);
+                    this.spawnNote(lane, sliderHeight);
+                }, (((beat - lastBeat) / this.map.bpm) * 60 * 1000) - this.msToKey);
+
+                getNextNote(index + 1);
             }
             getNextNote(0);
         }, this.map.offset);
     }
 
     // ----
-    spawnNote(row, sliderHeight) {
+
+    msToBeat(ms, bpm = this.map.bpm) {
+        return ms / (60 * 1000 / bpm);
+    }
+
+    beatToMs(beat, bpm = this.map.bpm) {
+        return (beat / bpm) * 60 * 1000;
+    }
+
+    spawnNote(laneNum, sliderHeight = 0) {
+        const laneIndex = laneNum - 1;
+        let top = 0;
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
-        let top = 0;
         noteElement.style.top = `${top}px`;
-
-        this.gameLoop((deltaTime, nextFrame, fps) => {
-            top += 1 * deltaTime * globalSpeed * ((this.settings.scrollSpeed || this.level.scrollSpeed) / 10);
-            noteElement.style.top = `${top}px`;
-            if (top >= screen.availHeight) {
-                if (!this.rows[row - 1].notesElement.contains(noteElement)) return;
-                noteElement.remove();
-            } else nextFrame();
-        });
-
-        this.rows[row - 1].notesElement.appendChild(noteElement);
+        this.lanes[laneIndex].notes.push({ top, noteElement, slider: sliderHeight ? true : false });
+        this.lanes[laneIndex].notesElement.appendChild(noteElement);
+        // TODO: slider height is in beats, gota calcualte somehow
+        noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
     }
 
-    onKeyPress(index) {
-        this.rows[index].keyElement.classList.toggle("pressed");
-        const closestNote = this.rows[index].notesElement.children[0];
-        if (!closestNote) return;
-
-        const closestNoteTop = closestNote.offsetTop - closestNote.clientHeight;
-        const keyTop = this.rows[index].keyElement.offsetTop;
-
-        const distance = Math.max(closestNoteTop - keyTop, keyTop - closestNoteTop);
-
-        // points 
-        if (distance <= 25) {
-            console.log("VERY GOOD")
-        } else if (distance <= 50) {
-            console.log("GOOD")
-        } else if (distance <= 100) {
-            console.log("shit")
-        } else if (distance <= 150) {
-            console.log("miss")
-        } else return;
-        
-        this.hitNote(closestNote);
+    removeClosestNote(laneIndex) {
+        if (!this.lanes[laneIndex].notes.length) return;
+        this.lanes[laneIndex].notes[0].noteElement.remove();
+        this.lanes[laneIndex].notes.splice(0, 1);
     }
 
-    onKeyRelease(index) {
-        this.rows[index].keyElement.classList.toggle("pressed");
+    onKeyPress(laneIndex) {
+        this.lanes[laneIndex].keyElement.classList.toggle("pressed");
+
+        if (this.lanes[laneIndex].notes[0]) this.hitNote(laneIndex);
+    }
+
+    onKeyRelease(laneIndex) {
+        this.lanes[laneIndex].keyElement.classList.toggle("pressed");
     }
 
     stop() {
 
     }
 
-    hitNote(note) {
-        note.remove();
+    hitNote(laneIndex) {
+        const closestNote = this.lanes[laneIndex].notes[0].noteElement;
+        const closestNoteY = closestNote.offsetTop;
+        const keyY = this.lanes[laneIndex].keyElement.offsetTop + this.lanes[laneIndex].keyElement.offsetHeight;
+
+        const distance = Math.max(closestNoteY - keyY, keyY - closestNoteY);
+
+        if (distance > this.gameSettings.points[this.gameSettings.points.length - 1].distance) return;
+
+        // TODO: add points
+        this.removeClosestNote(laneIndex);
     }
 
     init() {
@@ -119,41 +139,41 @@ class Game {
         this.gameElement.classList.add("game");
         this.gameContainer.appendChild(this.gameElement);
 
-        // Create rows
-        const rowsElement = document.createElement("div");
-        rowsElement.classList.add("rows");
-        this.gameElement.appendChild(rowsElement);
+        // Create lanes
+        const lanesElement = document.createElement("div");
+        lanesElement.classList.add("lanes");
+        this.gameElement.appendChild(lanesElement);
 
         for (let i = 0; i < this.level.keys; i++) {
-            const rowElement = document.createElement("div");
-            rowElement.classList.add("row");
-            rowsElement.appendChild(rowElement);
+            const laneElement = document.createElement("div");
+            laneElement.classList.add("lane");
+            lanesElement.appendChild(laneElement);
 
             const notesElement = document.createElement("div");
             notesElement.classList.add("notes");
-            rowElement.appendChild(notesElement);
+            laneElement.appendChild(notesElement);
 
             const keyElement = document.createElement("div");
             keyElement.classList.add("key");
-            rowElement.appendChild(keyElement);
+            laneElement.appendChild(keyElement);
 
-            this.rows.push({ rowElement, notesElement, keyElement });
+            this.lanes.push({ laneElement, notesElement, keyElement, keyPressed: false, notes: [] });
         }
 
         // Create events
         // Key pressed
         document.body.onkeydown = ev => {
-            const index = this.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
-            if (index >= 0 && !this.rows[index].pressed) {
-                this.rows[index].pressed = true;
+            const index = this.userSettings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
+            if (index >= 0 && !this.lanes[index].keyPressed) {
+                this.lanes[index].keyPressed = true;
                 this.onKeyPress(index);
             }
         }
         // Key released
         document.body.onkeyup = ev => {
-            const index = this.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
-            if (index >= 0 && this.rows[index].pressed) {
-                this.rows[index].pressed = false;
+            const index = this.userSettings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
+            if (index >= 0 && this.lanes[index].keyPressed) {
+                this.lanes[index].keyPressed = false;
                 this.onKeyRelease(index);
             }
         }
@@ -165,179 +185,6 @@ class Game {
     }
 
     gameLoop(callback) {
-        let prevTime;
-        let fps = 0;
-
-        const loop = () => {
-            const time = Date.now();
-            const deltaTime = time - (prevTime || time);
-            if (deltaTime) fps = Math.round(1000 / deltaTime);
-            prevTime = time;
-
-            callback(deltaTime, () => requestAnimationFrame(loop), fps);
-        }
-
-        requestAnimationFrame(loop);
-    }
-}
-
-async function startGame(gameContainer, map, level, settings) {
-    // Variables
-    let gameElement;
-    const recordedData = [];
-    const rows = [];
-
-    setupGame();
-    createRows();
-    createEvents();
-
-    // gameLoop((deltaTime, nextFrame, fps) => {
-    //     console.log("FPS:", fps);
-    //     nextFrame();
-    // });
-
-    // THIS IS JUST TEMP SHIT FRRRRRR IMA MAKE THIS BETTER (PROBABLY NOT)
-    let test = 0;
-    if (map.backgroundData) {
-        const backgroundURL = URL.createObjectURL(map.backgroundData);
-        gameContainer.style.backgroundImage = `url("${backgroundURL}")`;
-    }
-    const audioURL = URL.createObjectURL(map.audioData);
-    const audio = new Audio(audioURL);
-    audio.onended = () => URL.revokeObjectURL(audioURL);
-    audio.onloadeddata = () => console.log(audio.duration);
-    audio.volume = 0.25; // kill oyurself
-    audio.playbackRate = globalSpeed;
-    await audio.play();
-
-    setTimeout(() => {
-        let lastBeat = 0;
-        const getNextNote = index => {
-            const nextNote = level.data[index];
-            if (!nextNote) return;
-            const row = nextNote[0];
-            const sliderHeight = nextNote[1];
-            const beat = nextNote[2];
-
-            let time = Date.now();
-            const timeout = ((beat - lastBeat) / map.bpm) * 60 * 1000;
-
-            gameLoop((deltaTime, nextFrame, fps) => {
-                if (Date.now() - time <= timeout) return nextFrame();
-                lastBeat = beat;
-                spawnNote(row, sliderHeight);
-                getNextNote(index + 1);
-            });
-            // setTimeout(() => {
-            //     lastBeat = beat;
-            //     spawnNote(row, sliderHeight);
-            //     getNextNote(index + 1);
-            // }, ((beat - lastBeat) / map.bpm) * 60 * 1000);
-        }
-        getNextNote(0);
-    }, map.offset);
-
-    // ----
-
-    function spawnNote(row, sliderHeight) {
-        const noteElement = document.createElement("div");
-        noteElement.classList.add("note");
-        let top = 0;
-        noteElement.style.top = `${top}px`;
-
-        gameLoop((deltaTime, nextFrame, fps) => {
-            test += deltaTime;
-            top += 1 * deltaTime * globalSpeed * ((settings.scrollSpeed || level.scrollSpeed) / 10);
-            noteElement.style.top = `${top}px`;
-            if (top >= screen.availHeight) {
-                if (!rows[row - 1].notesElement.contains(noteElement)) return;
-                noteElement.remove();
-            } else nextFrame();
-        });
-
-        rows[row - 1].notesElement.appendChild(noteElement);
-    }
-
-    function hitNote(note) {
-        note.remove() // TODO: BLOW THE FUCK UP
-    }
-
-    function setupGame() {
-        gameContainer.innerHTML = "";
-        gameElement = document.createElement("div");
-        gameElement.classList.add("game");
-        gameContainer.appendChild(gameElement);
-    }
-
-    function createRows() {
-        const rowsElement = document.createElement("div");
-        rowsElement.classList.add("rows");
-        gameElement.appendChild(rowsElement);
-
-        for (let i = 0; i < level.keys; i++) {
-            const rowElement = document.createElement("div");
-            rowElement.classList.add("row");
-            rowsElement.appendChild(rowElement);
-
-            const notesElement = document.createElement("div");
-            notesElement.classList.add("notes");
-            rowElement.appendChild(notesElement);
-
-            const keyElement = document.createElement("div");
-            keyElement.classList.add("key");
-            rowElement.appendChild(keyElement);
-
-            rows.push({ rowElement, notesElement, keyElement });
-        }
-    }
-
-    function createEvents() {
-        // Key pressed
-        document.body.onkeydown = ev => {
-            const index = settings.keybinds[`${level.keys}-keys`]?.findIndex(i => i == ev.key);
-            if (index >= 0 && !rows[index].pressed) {
-                rows[index].pressed = true;
-                onKeyPress(index);
-            }
-        }
-        // Key released
-        document.body.onkeyup = ev => {
-            const index = settings.keybinds[`${level.keys}-keys`]?.findIndex(i => i == ev.key);
-            if (index >= 0 && rows[index].pressed) {
-                rows[index].pressed = false;
-                onKeyRelease(index);
-            }
-        }
-    }
-
-    function onKeyPress(index) {
-        rows[index].keyElement.classList.toggle("pressed");
-        const closestNote = rows[index].notesElement.children[0];
-        if (!closestNote) return;
-
-        const closestNoteTop = closestNote.offsetTop - closestNote.clientHeight;
-        const keyTop = rows[index].keyElement.offsetTop;
-
-        const distance = Math.max(closestNoteTop - keyTop, keyTop - closestNoteTop);
-
-        // points 
-        if (distance <= 25) {
-            console.log("VERY GOOD")
-        } else if (distance <= 50) {
-            console.log("GOOD")
-        } else if (distance <= 100) {
-            console.log("shit")
-        } else if (distance <= 150) {
-            console.log("miss")
-        } else return;
-        hitNote(closestNote)
-    }
-
-    function onKeyRelease(index) {
-        rows[index].keyElement.classList.toggle("pressed");
-    }
-
-    function gameLoop(callback) {
         let prevTime;
         let fps = 0;
 

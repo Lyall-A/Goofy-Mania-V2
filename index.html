@@ -11,11 +11,11 @@
     </head>
     <body>
         <div id="game-container"></div>
-        <button style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;" onclick="doThing(this)">CLICK ME</button>
+        <button style="width: 100%; height: 100%;" onclick="doThing(this)">CLICK ME</button>
         <script>
             async function doThing(e) {
                 e.remove();
-                const settings = {
+                const userSettings = {
                     scrollSpeed: 17,
                     keybinds: {
                         "4-keys": ["d","f","j","k"],
@@ -24,12 +24,13 @@
                 }
                 loadSkin("/skins/default");
                 // for testing
-                const mapPath = "./maps/3";
+                // const mapPath = "./maps/Quaver - JUST LIKE WE NEVER SAID GOODBYE";
+                const mapPath = "./maps/Quaver - Kyu-Kurarin (7_7 bootleg)";
                 const levelIndex = 0;
                 const map = await getMap(mapPath);
                 const level = await getLevel(mapPath, map.levels[levelIndex]);
 
-                const game = new Game(document.getElementById("game-container"), map, level, settings);
+                game = new Game(document.getElementById("game-container"), map, level, userSettings);
                 game.init();
                 game.start();
             }

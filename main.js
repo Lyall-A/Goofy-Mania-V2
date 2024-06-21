@@ -11,6 +11,16 @@ async function getMap(mapPath) {
     return map;
 }
 
+async function loadDefaultSkin(skinPath) {
+    const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
+
+    const styleElement = document.getElementById("default-skin-style");
+    styleElement.rel = "stylesheet";
+    styleElement.href = `${skinPath}/${skin.styleFile}`;
+
+    document.head.appendChild(styleElement);
+}
+
 async function loadSkin(skinPath) {
     const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
 

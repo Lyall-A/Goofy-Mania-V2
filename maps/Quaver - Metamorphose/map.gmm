@@ -1,0 +1,1 @@
+{"audioFile":"audio.mp3","coverFile":null,"backgroundFile":"metamorphose3.png","name":"Metamorphose","artist":"Laur","mappers":[{"name":"Vid"},{"name":"Vid"}],"offset":0,"bpm":160,"levels":[{"scrollSpeed":17,"name":"Insane","keys":4,"file":"79650.gml"},{"scrollSpeed":17,"name":"Hard","keys":4,"file":"79651.gml"}]}
