@@ -83,6 +83,9 @@ class Game {
                     note.noteElement.style.top = `${note.top}px`;
                     if (!this.gameSettings.dontCheckIfNotesOffScreen && note.noteElement.getBoundingClientRect().top >= document.body.offsetHeight) {
                         if (!lane.notesElement.contains(note.noteElement)) return;
+                        // Missed note
+                        this.misses++;
+                        this.combo = 0;
                         this.removeNote(laneIndex, note);
                     }
                 });
@@ -154,9 +157,11 @@ class Game {
 
         const distance = Math.max(closestNote.top - keyY, keyY - closestNote.top);
 
-        if (distance > this.gameSettings.points[this.gameSettings.points.length - 1].distance) return;
+        if (distance > this.gameSettings.points[this.gameSettings.points.length - 1].distance) return; // Ignore if closest note is still too far
 
         // TODO: add points
+        this.combo++;
+        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
         this.removeNote(laneIndex, closestNote);
     }
 
