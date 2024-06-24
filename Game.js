@@ -116,6 +116,7 @@ class Game {
         lane.notesSpawned++;
         lane.notes.push({ top, noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
         lane.notesElement.appendChild(noteElement);
+        if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
         // TODO: slider height is in beats, gota calcualte somehow
         noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
     }
