@@ -10,11 +10,11 @@
         <script src="./Game.js"></script>
     </head>
     <body>
+        <button id="temp" style="width: 100%; height: 100%; font-size: 5em;" onclick="doThing(this)">CLICK ME</button>
         <div id="game-container"></div>
-        <button style="width: 100%; height: 100%;" onclick="doThing(this)">CLICK ME</button>
         <script>
             async function doThing(e) {
-                e.remove();
+                try {
                 const userSettings = {
                     scrollSpeed: 17,
                     keybinds: {
@@ -25,16 +25,27 @@
                 loadSkin("/skins/default");
                 // for testing
                 // const mapPath = "./maps/Quaver - JUST LIKE WE NEVER SAID GOODBYE";
-                // const mapPath = "./maps/Quaver - ";
-                const mapPath = "./maps/Quaver - Kyu-kurarin (7_7 bootleg)";
-                const levelIndex = 0;
+                const mapPath = "./maps/Quaver - Bad Apple!!";
+                // const mapPath = "./maps/Quaver - Kyu-kurarin (7_7 bootleg)";
+                // const mapPath = "./maps/test";
+                // const mapPath = "./maps/Quaver - Animosity";
+                // const mapPath = "./maps/Quaver - Invisible Frenzy"; 
+                // const mapPath = "./maps/Quaver - Feral"; 
+                const levelIndex = 2;
                 const map = await getMap(mapPath);
                 const level = await getLevel(mapPath, map.levels[levelIndex]);
-
+                
+                document.title += ` | ${map.name}`
                 game = new Game(document.getElementById("game-container"), map, level, userSettings);
                 game.init();
                 game.start();
+                game.onstop = () => location.reload();
+                if (e) e.remove();
+            } catch (err) {
+                if (e) e.innerHTML = err;
             }
+            }
+            try { doThing(document.getElementById("temp")) } catch (err) { }
         </script>
     </body>
 </html>

@@ -1,13 +1,16 @@
 class Game {
     constructor(gameContainer, map, level, userSettings, gameSettings = {
         globalSpeed: 1,
+        logFps: false,
+        logDeltaTime: false,
+        dontCheckIfNotesOffScreen: true,
         points: [
             { distance: 25, points: 350 },
             { distance: 50, points: 300 },
             { distance: 100, points: 200 },
             { distance: 150, points: 100 },
             { distance: 175, points: 50 },
-            { distance: 200, points: 0, isBad: true },
+            { distance: 200, points: 0, isBadHit: true },
         ]
     }) {
         this.gameContainer = gameContainer;
@@ -16,7 +19,12 @@ class Game {
         this.userSettings = userSettings;
         this.gameSettings = gameSettings;
 
-        this.msToKey = 700; // TODO: add ms to key to spawn keys early
+        this.notesReady = null;
+        this.startTime = null;
+        this.running = false;
+        this.msToKey = 500; // TODO: add ms to key to spawn keys early
+        this.notesToSpawn = this.level.data;
+        this.runningTime = 0;
         this.lanes = [];
 
         this.points = 0;
@@ -29,80 +37,90 @@ class Game {
     }
 
     async start() {
+        // Pause game when document is hidden (TODO)
+
         // Game loop
-        this.gameLoop((deltaTime, loop, fps) => {
+        this.gameLoop(async (deltaTime, loop, fps) => {
+            this.runningTime += deltaTime;
+
+            if (!this.running) {
+                // First run
+                document.onvisibilitychange = () => {
+                    if (document.hidden) this.stop();
+                }
+
+                setTimeout(() => this.notesReady = true, this.map.offset);
+                // TODO: make neater
+                if (this.map.backgroundData) {
+                    const backgroundURL = URL.createObjectURL(this.map.backgroundData);
+                    this.backgroundElement.style.backgroundImage = `url("${backgroundURL}")`;
+                }
+                const audioURL = URL.createObjectURL(this.map.audioData);
+                this.audio = new Audio(audioURL);
+                this.audio.onloadeddata = () => URL.revokeObjectURL(audioURL);
+                this.audio.onended = () => this.stop();
+                this.audio.volume = 0.25; // kill oyurself
+                // this.audio.playbackRate = this.gameSettings.globalSpeed;
+                await this.audio.play().catch(err => console.log("For some reason the Audio API errors sometimes but does actually work, I write good code.", err));
+                this.startTime = Date.now();
+                this.running = true;
+            }
+
+            // Spawn notes
+            if (this.notesReady) {
+                for (const i in { ...this.notesToSpawn }) { // the fuck?
+                    const noteToSpawn = this.notesToSpawn[0];
+                    if (this.beatToMs(noteToSpawn[2]) + this.map.offset >= this.runningTime + this.msToKey) break; // TODO: is this right?
+                    this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
+                    this.notesToSpawn.shift();
+                }
+            }
+
+            // Move notes down/despawn when off screen
             this.lanes.forEach((lane, laneIndex) => {
                 lane.notes.forEach(note => {
                     note.top += 1 * deltaTime * this.gameSettings.globalSpeed * ((this.userSettings.scrollSpeed || this.level.scrollSpeed) / 10);
                     note.noteElement.style.top = `${note.top}px`;
-                    if (note.noteElement.getBoundingClientRect().y >= screen.availHeight) {
+                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.noteElement.getBoundingClientRect().y >= document.body.offsetHeight) {
                         if (!lane.notesElement.contains(note.noteElement)) return;
-                        this.removeClosestNote(laneIndex);
+                        this.removeNote(laneIndex, note);
                     }
                 });
             });
 
+            if (this.gameSettings.logFps) console.log(`FPS: ${fps}`);
+            if (this.gameSettings.logDeltaTime) console.log(`Delta Time: ${deltaTime}`);
+
             loop();
         });
-
-        // THIS IS JUST TEMP SHIT FRRRRRR IMA MAKE THIS BETTER (PROBABLY NOT)
-        if (this.map.backgroundData) {
-            const backgroundURL = URL.createObjectURL(this.map.backgroundData);
-            this.gameContainer.style.backgroundImage = `url("${backgroundURL}")`;
-        }
-        const audioURL = URL.createObjectURL(this.map.audioData);
-        const audio = new Audio(audioURL);
-        audio.onloadeddata = () => URL.revokeObjectURL(audioURL);
-        audio.volume = 0.25; // kill oyurself
-        audio.playbackRate = this.gameSettings.globalSpeed;
-        await audio.play();
-
-        setTimeout(() => {
-            let lastBeat = 0;
-            const getNextNote = index => {
-                const nextNote = this.level.data[index];
-                if (!nextNote) return;
-                const lane = nextNote[0];
-                const sliderHeight = nextNote[1];
-                const beat = nextNote[2];
-
-                setTimeout(() => {
-                    lastBeat = beat;
-                    this.spawnNote(lane, sliderHeight);
-                }, (((beat - lastBeat) / this.map.bpm) * 60 * 1000) - this.msToKey);
-
-                getNextNote(index + 1);
-            }
-            getNextNote(0);
-        }, this.map.offset);
     }
 
-    // ----
-
     msToBeat(ms, bpm = this.map.bpm) {
-        return ms / (60 * 1000 / bpm);
+        return parseFloat(ms.toFixed(10)) / (60 * 1000 / bpm);
     }
 
     beatToMs(beat, bpm = this.map.bpm) {
-        return (beat / bpm) * 60 * 1000;
+        return parseFloat(((beat / bpm) * 60 * 1000).toFixed(10));
     }
 
     spawnNote(laneNum, sliderHeight = 0) {
         const laneIndex = laneNum - 1;
+        const lane = this.lanes[laneIndex];
         let top = 0;
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
         noteElement.style.top = `${top}px`;
-        this.lanes[laneIndex].notes.push({ top, noteElement, slider: sliderHeight ? true : false });
-        this.lanes[laneIndex].notesElement.appendChild(noteElement);
+        lane.notesSpawned++;
+        lane.notes.push({ top, noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
+        lane.notesElement.appendChild(noteElement);
         // TODO: slider height is in beats, gota calcualte somehow
         noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
     }
 
-    removeClosestNote(laneIndex) {
-        if (!this.lanes[laneIndex].notes.length) return;
-        this.lanes[laneIndex].notes[0].noteElement.remove();
-        this.lanes[laneIndex].notes.splice(0, 1);
+    removeNote(laneIndex, note) {
+        const lane = this.lanes[laneIndex];
+        lane.notes.splice(lane.notes.findIndex(i => i.id == note.id), 1);
+        note.noteElement.remove();
     }
 
     onKeyPress(laneIndex) {
@@ -116,28 +134,40 @@ class Game {
     }
 
     stop() {
-
+        this.running = false;
+        this.audio.pause();
+        this.audio.remove();
+        this.gameContainer.style = "";
+        this.gameContainer.innerHTML = "";
+        this.onstop();
     }
 
     hitNote(laneIndex) {
-        const closestNote = this.lanes[laneIndex].notes[0].noteElement;
-        const closestNoteY = closestNote.offsetTop;
-        const keyY = this.lanes[laneIndex].keyElement.offsetTop + this.lanes[laneIndex].keyElement.offsetHeight;
+        // const closestNote = this.lanes[laneIndex].notes[0].noteElement;
+        const lane = this.lanes[laneIndex];
+        const keyY = lane.keyElement.offsetTop + lane.keyElement.offsetHeight;
+        const closestNote = lane.notes.reduce((prev, curr) => {
+            const currDistance = Math.max(curr.top - keyY, keyY - curr.top);
+            const prevDistance = Math.max(prev.top - keyY, keyY - prev.top);
+            return currDistance < prevDistance ? curr : prev;
+        });
 
-        const distance = Math.max(closestNoteY - keyY, keyY - closestNoteY);
+        const distance = Math.max(closestNote.top - keyY, keyY - closestNote.top);
 
         if (distance > this.gameSettings.points[this.gameSettings.points.length - 1].distance) return;
 
         // TODO: add points
-        this.removeClosestNote(laneIndex);
+        this.removeNote(laneIndex, closestNote);
     }
 
     init() {
         // Create game
-        this.gameContainer.innerHTML = "";
         this.gameElement = document.createElement("div");
         this.gameElement.classList.add("game");
-        this.gameContainer.appendChild(this.gameElement);
+
+        // Create background
+        this.backgroundElement = document.createElement("background");
+        this.backgroundElement.classList.add("background");
 
         // Create lanes
         const lanesElement = document.createElement("div");
@@ -157,8 +187,12 @@ class Game {
             keyElement.classList.add("key");
             laneElement.appendChild(keyElement);
 
-            this.lanes.push({ laneElement, notesElement, keyElement, keyPressed: false, notes: [] });
+            this.lanes.push({ laneElement, notesElement, notesSpawned: 0, keyElement, keyPressed: false, notes: [] });
         }
+
+        // Append to game container
+        this.gameContainer.appendChild(this.gameElement);
+        this.gameContainer.appendChild(this.backgroundElement);
 
         // Create events
         // Key pressed
@@ -179,11 +213,6 @@ class Game {
         }
     }
 
-    destroy() {
-        this.gameContainer.innerHTML = "";
-        // TODO: remove events etc
-    }
-
     gameLoop(callback) {
         let prevTime;
         let fps = 0;
@@ -199,4 +228,7 @@ class Game {
 
         requestAnimationFrame(loop);
     }
+
+    // Game events
+    onstop() { }
 }
