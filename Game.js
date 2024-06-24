@@ -3,7 +3,7 @@ class Game {
         globalSpeed: 1,
         logFps: false,
         logDeltaTime: false,
-        dontCheckIfNotesOffScreen: true,
+        dontCheckIfNotesOffScreen: false,
         points: [
             { distance: 25, points: 350 },
             { distance: 50, points: 300 },
@@ -81,7 +81,7 @@ class Game {
                 lane.notes.forEach(note => {
                     note.top += 1 * deltaTime * this.gameSettings.globalSpeed * ((this.userSettings.scrollSpeed || this.level.scrollSpeed) / 10);
                     note.noteElement.style.top = `${note.top}px`;
-                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.noteElement.getBoundingClientRect().y >= document.body.offsetHeight) {
+                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.noteElement.getBoundingClientRect().top >= document.body.offsetHeight) {
                         if (!lane.notesElement.contains(note.noteElement)) return;
                         this.removeNote(laneIndex, note);
                     }
