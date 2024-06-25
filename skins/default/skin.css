@@ -44,7 +44,6 @@
 }
 
 .note {
-    will-change: top;
     background-color: rgb(140, 18, 255);
     transform: translateY(-100%);
     position: absolute;

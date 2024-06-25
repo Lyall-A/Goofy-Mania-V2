@@ -1,6 +1,5 @@
 class Game {
     constructor(gameContainer, map, level, user, gameSettings = {
-        globalSpeed: 1,
         logFps: false,
         logDeltaTime: false,
         dontCheckIfNotesOffScreen: false,
@@ -8,7 +7,7 @@ class Game {
         multiplierChange: 1000, // Double the multiplier every 1000 points
         points: [
             { distance: 25, points: 300 },
-            { distance: 50, points: 200 },
+            { distance: 75, points: 200 },
             { distance: 125, points: 100 },
             { distance: 150, points: 50 },
             { distance: 250, points: 0, isBadHit: true },
@@ -23,13 +22,13 @@ class Game {
         this.notesReady = null;
         this.startTime = null;
         this.running = null;
-        this.msToKey = 500; // TODO: add ms to key to spawn keys early
         this.notesToSpawn = this.level.data;
         this.runningTime = 0;
         this.lanes = [];
         this.urls = { },
         this.elements = { };
         this.notesRemoved = 0;
+        this.noteMoveAmount = (this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10;
 
         this.health = 100;
         this.score = 0;
@@ -59,11 +58,13 @@ class Game {
                     if (document.hidden) this.pause();
                 }
 
-                setTimeout(() => this.notesReady = true, this.map.offset);
-                // TODO: make neater
                 if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
-                this.music = await this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
-                this.music.onended = () => this.stop();
+                setTimeout(() => this.notesReady = true, this.map.offset);
+                setTimeout(async () => {
+                    this.music = await this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
+                    this.music.onended = () => this.stop();
+                    this.music.onplaying = () => console.log("WHY IS THIS HAPPENING!!!!!!!!!!!");
+                }, this.getMsToKey());
 
                 this.startTime = Date.now();
                 this.running = true;
@@ -73,17 +74,18 @@ class Game {
             if (this.notesReady) {
                 for (const i in { ...this.notesToSpawn }) { // the fuck?
                     const noteToSpawn = this.notesToSpawn[0];
-                    if (this.beatToMs(noteToSpawn[2]) + this.map.offset >= this.runningTime + this.msToKey) break; // TODO: is this right?
+                    if (this.beatToMs(noteToSpawn[2]) + this.map.offset >= this.runningTime) break; // TODO: is this right?
                     this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
-                    this.notesToSpawn.shift();
+                    this.notesToSpawn.shift(); 
                 }
             }
 
             // Move notes down/despawn when off screen
             this.lanes.forEach((lane, laneIndex) => {
                 lane.notes.forEach(note => {
-                    note.top += 1 * deltaTime * this.gameSettings.globalSpeed * ((this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10);
+                    note.top += this.noteMoveAmount * deltaTime;
                     note.element.style.top = `${note.top}px`;
+                    // if (!this.gameSettings.dontCheckIfNotesOffScreen && note.element.getBoundingClientRect().top > lane.elements.key.offsetTop) {
                     if (!this.gameSettings.dontCheckIfNotesOffScreen && note.element.getBoundingClientRect().top >= document.body.offsetHeight) {
                         if (!lane.elements.notes.contains(note.element)) return;
                         // Missed note
@@ -119,16 +121,26 @@ class Game {
         return parseFloat(((beat / bpm) * 60 * 1000).toFixed(10));
     }
 
+    getMsToKey(laneNum = 1) {
+        const laneIndex = laneNum - 1;
+        return this.lanes[laneIndex].elements.key.offsetTop / this.noteMoveAmount;
+    }
+
+    async sleep(ms) {
+        return new Promise(resolve => setTimeout(() => resolve(), ms));
+    }
+
     spawnNote(laneNum, sliderHeight = 0) {
         const laneIndex = laneNum - 1;
         const lane = this.lanes[laneIndex];
         let top = 0;
+        // let top = -this.getMsToKey(laneNum);
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
         noteElement.style.top = `${top}px`;
-        lane.notesSpawned++;
-        lane.notes.push({ top, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
         lane.elements.notes.appendChild(noteElement);
+        lane.notesSpawned++;
+        lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
         // if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
         // TODO: slider height is in beats, gota calcualte somehow
         // noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
@@ -153,6 +165,7 @@ class Game {
         // TODO: add master volume here
         if (options.volume) audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
         if (options.playbackRate) audio.playbackRate = options.playbackRate;
+        audio.onpause = e => audio.ended ? null : audio.play();
         await audio.play();
         return audio;
     }
@@ -205,14 +218,17 @@ class Game {
     hitNote(laneIndex) {
         // const closestNote = this.lanes[laneIndex].notes[0].noteElement;
         const lane = this.lanes[laneIndex];
-        const keyY = lane.elements.key.offsetTop + lane.elements.key.offsetHeight;
+        const keyTop = lane.elements.key.offsetTop;
         const closestNote = lane.notes.reduce((prev, curr) => {
-            const currDistance = Math.max(curr.top - keyY, keyY - curr.top);
-            const prevDistance = Math.max(prev.top - keyY, keyY - prev.top);
+            const currTop = curr.top - curr.height;
+            const prevTop = prev.top - prev.height;
+            const currDistance = Math.max(currTop - keyTop, keyTop - currTop);
+            const prevDistance = Math.max(prevTop - keyTop, keyTop - prevTop);
             return currDistance < prevDistance ? curr : prev;
         });
 
-        const distance = Math.max(closestNote.top - keyY, keyY - closestNote.top);
+        const closestNoteTop = closestNote.top - closestNote.height;
+        const distance = Math.max(closestNoteTop - keyTop, keyTop - closestNoteTop);
 
         if (distance > Math.max(...this.gameSettings.points.map(i => i.distance))) return; // Ignore if closest note is still too far
         const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => {
@@ -229,6 +245,7 @@ class Game {
 
         this.scoreNoMultiplier += pointsToAdd.points;
         this.score += pointsToAdd.points * this.multiplier;
+        this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         this.removeNote(laneIndex, closestNote);
     }
 
@@ -273,12 +290,12 @@ class Game {
     }
 
     gameLoop(callback) {
-        let prevTime;
+        let prevTime = Date.now();
         let fps = 0;
 
         const loop = () => {
             const time = Date.now();
-            const deltaTime = time - (prevTime || time);
+            const deltaTime = time - prevTime;
             if (deltaTime) fps = Math.round(1000 / deltaTime);
             prevTime = time;
 
