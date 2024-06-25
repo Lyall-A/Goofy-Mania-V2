@@ -52,7 +52,7 @@
             })();
 
             function start() {
-                if (!game) return start();
+                if (!game) return setTimeout(() => start(), 150);
                 game.start();
                 game.onstop = () => location.reload();
                 document.getElementById("button").remove();
