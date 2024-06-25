@@ -3,7 +3,7 @@
         "file": "skin.css"
     },
     "sfx": {
-        "break-combo": { "file": "break-combo.ogg" },
-        "hit": { "file": "hit.ogg" }
+        "combo-break": { "file": "combo-break.ogg" },
+        "hit": { "file": "hit.wav" }
     }
 }

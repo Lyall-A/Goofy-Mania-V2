@@ -9,6 +9,7 @@
         <script src="./Game.js"></script>
     </head>
     <body>
+        <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA V2 ALPHA BETA V0.0000000001<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY</div>
         <button id="button" style="width: 100%; height: 100%; font-size: 5em;" onclick="start()">CLICK ME</button>
         <div id="game-container"></div>
         <script>
@@ -18,27 +19,39 @@
                 const skin = await getSkinData("/skins/default");
                 loadDefaultSkin(skin);
 
-                // const mapPath = "/maps/Quaver - Kyu-kurarin (7_7 bootleg)";
-                const mapPath = "/maps/Quaver - Metamorphose";
-                const levelIndex = 1;
+                // const mapPath = "/maps/Quaver - Bimbo Limbo";
+                const mapPath = "/maps/Quaver - Endless Adventure";
+                // const mapPath = "/maps/Quaver - Wasted (Bootleg Version) (Cut Ver.)";
+                // const mapPath = "/maps/Quaver - this train going nowhere";
+                // const mapPath = "/maps/Quaver - Shiawase (VIP)";
+                // const mapPath = "/maps/Quaver - Lobotomy";
+                // const mapPath = "/maps/Quaver - Everlasting Eternity (uh oh)"; // funny 7k map
+                const levelIndex = 2;
 
                 const map = await getMapData(mapPath);
                 const level = await getLevelData(mapPath, map.levels[levelIndex]);
 
-                const userSettings = {
-                    scrollSpeed: 17,
-                    keybinds: {
-                        "4-keys": "dfjk".split("")
+                const user = {
+                    settings: {
+                        scrollSpeed: 20,
+                        masterVolume: 25,
+                        musicVolume: 100,
+                        sfxVolume: 100,
+                        keybinds: {
+                            "4-keys": "dfjk".split(""),
+                            "7-keys": "sdf jkl".split("")
+                        }
                     },
-                    ...skin
+                    skin
                 }
 
-                game = new Game(gameContainer, map, level, userSettings);
+                game = new Game(gameContainer, map, level, user);
+                game.init();
             })();
 
             function start() {
-                game.init();
                 game.start();
+                game.onstop = () => location.reload();
                 document.getElementById("button").remove();
             }
         </script>

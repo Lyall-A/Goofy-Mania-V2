@@ -1,22 +1,23 @@
 class Game {
-    constructor(gameContainer, map, level, userSettings, gameSettings = {
+    constructor(gameContainer, map, level, user, gameSettings = {
         globalSpeed: 1,
-        logFps: true,
+        logFps: false,
         logDeltaTime: false,
         dontCheckIfNotesOffScreen: false,
+        maxMultiplier: 4,
+        multiplierChange: 1000, // Double the multiplier every 1000 points
         points: [
-            { distance: 25, points: 350 },
-            { distance: 50, points: 300 },
-            { distance: 100, points: 200 },
-            { distance: 150, points: 100 },
-            { distance: 175, points: 50 },
-            { distance: 200, points: 0, isBadHit: true },
+            { distance: 25, points: 300 },
+            { distance: 50, points: 200 },
+            { distance: 125, points: 100 },
+            { distance: 150, points: 50 },
+            { distance: 250, points: 0, isBadHit: true },
         ]
     }) {
         this.gameContainer = gameContainer;
         this.map = map;
         this.level = level;
-        this.userSettings = userSettings;
+        this.user = user;
         this.gameSettings = gameSettings;
 
         this.notesReady = null;
@@ -28,20 +29,27 @@ class Game {
         this.lanes = [];
         this.urls = { },
         this.elements = { };
+        this.notesRemoved = 0;
 
-        this.points = 0;
-        this.multiplier = 0;
+        this.health = 100;
+        this.score = 0;
+        this.scoreNoMultiplier = 0;
+        this.multiplier = 1;
         this.combo = 0;
         this.maxCombo = 0;
+        this.badHits = 0;
         this.misses = 0;
         this.accuracy = 100.00;
         this.givenPoints = {};
     }
 
     async start() {
-        this.createUrl("hit", this.userSettings.sfx["hit"].data);
-        this.createUrl("audio", this.map.audio.data);
+        this.createUrl("hit", this.user.skin.sfx["hit"].data);
+        this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
+        this.createUrl("music", this.map.audio.data);
         this.createUrl("background", this.map.background.data);
+
+        setInterval(() => console.log(this.accuracy), 1000);
 
         // Game loop
         this.gameLoop(async (deltaTime, loop, fps) => {
@@ -56,14 +64,9 @@ class Game {
                 setTimeout(() => this.notesReady = true, this.map.offset);
                 // TODO: make neater
                 if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
-                this.audio = await this.playAudio(this.urls["audio"], {
-                    volume: 25
-                });
-                // this.audio = new Audio(this.urls["audio"]);
-                // this.audio.onended = () => this.stop();
-                // this.audio.volume = 0.25; // kill oyurself
-                // // this.audio.playbackRate = this.gameSettings.globalSpeed;
-                // await this.audio.play().catch(err => console.log("For some reason the Audio API errors sometimes but does actually work, I write good code.", err));
+                this.music = await this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
+                this.music.onended = () => this.stop();
+
                 this.startTime = Date.now();
                 this.running = true;
             }
@@ -81,11 +84,12 @@ class Game {
             // Move notes down/despawn when off screen
             this.lanes.forEach((lane, laneIndex) => {
                 lane.notes.forEach(note => {
-                    note.top += 1 * deltaTime * this.gameSettings.globalSpeed * ((this.userSettings.scrollSpeed || this.level.scrollSpeed) / 10);
+                    note.top += 1 * deltaTime * this.gameSettings.globalSpeed * ((this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10);
                     note.element.style.top = `${note.top}px`;
                     if (!this.gameSettings.dontCheckIfNotesOffScreen && note.element.getBoundingClientRect().top >= document.body.offsetHeight) {
                         if (!lane.elements.notes.contains(note.element)) return;
                         // Missed note
+                        if (this.combo) this.playSfx("combo-break");
                         this.misses++;
                         this.combo = 0;
                         this.removeNote(laneIndex, note);
@@ -127,20 +131,29 @@ class Game {
         lane.notesSpawned++;
         lane.notes.push({ top, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
         lane.elements.notes.appendChild(noteElement);
-        if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
+        // if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
         // TODO: slider height is in beats, gota calcualte somehow
-        noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
+        // noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
     }
 
     removeNote(laneIndex, note) {
         const lane = this.lanes[laneIndex];
         lane.notes.splice(lane.notes.findIndex(i => i.id == note.id), 1);
+        this.notesRemoved++;
+        this.accuracy = this.calculateAccuracy();
         note.element.remove();
     }
 
+    playSfx(sfx) {
+        if (!this.urls[sfx]) return;
+        this.playAudio(this.urls[sfx], { volume: this.user.settings.sfxVolume });
+    }
+
     async playAudio(url, options = { }) {
+        if (!url) return;
         const audio = new Audio(url);
-        if (options.volume) audio.volume = options.volume / 100;
+        // TODO: add master volume here
+        if (options.volume) audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
         if (options.playbackRate) audio.playbackRate = options.playbackRate;
         await audio.play();
         return audio;
@@ -149,7 +162,7 @@ class Game {
     onKeyPress(laneIndex) {
         this.lanes[laneIndex].elements.key.classList.toggle("pressed");
 
-        this.playAudio(this.urls["hit"], { volume: 25 });
+        this.playSfx("hit");
         if (this.lanes[laneIndex].notes[0]) this.hitNote(laneIndex);
     }
 
@@ -167,12 +180,16 @@ class Game {
             URL.revokeObjectURL(value);
         });
 
+        // Remove events
+        removeEventListener("keyup", this.onKeyUp);
+        removeEventListener("keydown", this.onKeyDown);
+
         // Stop game loop
         this.running = false;
 
         // TODO: better way?
-        this.audio.pause();
-        this.audio.remove();
+        this.music.pause();
+        this.music.remove();
 
         // Remove all elements
         Object.entries(this.elements).forEach(([key, value]) => {
@@ -181,6 +198,10 @@ class Game {
 
         // Call event
         this.onstop();
+    }
+
+    calculateAccuracy() {
+        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * this.notesRemoved)) * 100;
     }
 
     hitNote(laneIndex) {
@@ -195,11 +216,21 @@ class Game {
 
         const distance = Math.max(closestNote.top - keyY, keyY - closestNote.top);
 
-        if (distance > this.gameSettings.points[this.gameSettings.points.length - 1].distance) return; // Ignore if closest note is still too far
+        if (distance > Math.max(...this.gameSettings.points.map(i => i.distance))) return; // Ignore if closest note is still too far
+        const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => {
+            return Math.abs(curr.distance - distance) < Math.abs(prev.distance - distance) ? curr : prev;
+        });
 
-        // TODO: add points
-        this.combo++;
-        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        if (pointsToAdd.isBadHit) {
+            this.combo = 0;
+            this.badHits++;
+        } else {
+            this.combo++;
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        }
+
+        this.scoreNoMultiplier += pointsToAdd.points;
+        this.score += pointsToAdd.points * this.multiplier;
         this.removeNote(laneIndex, closestNote);
     }
 
@@ -239,22 +270,8 @@ class Game {
         this.gameContainer.appendChild(this.elements.background);
 
         // Create events
-        // Key pressed
-        document.body.onkeydown = ev => {
-            const index = this.userSettings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
-            if (index >= 0 && !this.lanes[index].keyPressed) {
-                this.lanes[index].keyPressed = true;
-                this.onKeyPress(index);
-            }
-        }
-        // Key released
-        document.body.onkeyup = ev => {
-            const index = this.userSettings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
-            if (index >= 0 && this.lanes[index].keyPressed) {
-                this.lanes[index].keyPressed = false;
-                this.onKeyRelease(index);
-            }
-        }
+        addEventListener("keydown", this.onKeyDown);
+        addEventListener("keyup", this.onKeyUp);
     }
 
     gameLoop(callback) {
@@ -271,6 +288,23 @@ class Game {
         }
 
         requestAnimationFrame(loop);
+    }
+
+    // Events
+    onKeyDown = (ev) => {
+        const index = this.user.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
+        if (index >= 0 && !this.lanes[index].keyPressed) {
+            this.lanes[index].keyPressed = true;
+            this.onKeyPress(index);
+        }
+    }
+
+    onKeyUp = (ev) => {
+        const index = this.user.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
+        if (index >= 0 && this.lanes[index].keyPressed) {
+            this.lanes[index].keyPressed = false;
+            this.onKeyRelease(index);
+        }
     }
 
     // Game events

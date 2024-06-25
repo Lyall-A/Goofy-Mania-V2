@@ -24,6 +24,7 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
     
     fs.readdirSync(quaverMapPath).forEach(file => {
         if (path.extname(file) != ".qua") return;
+        const gmlFileName = `${path.basename(file, path.extname(file))}.gml`;
         const filePath = path.join(quaverMapPath, file);
         const parsedQuaverLevel = parseQuaverLevel(fs.readFileSync(filePath, "utf-8"));
         
@@ -62,13 +63,13 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
             scrollSpeed: 17, // TODO...
             name: difficultyName,
             keys,
-            file: `${mapId}.gml`
+            file: gmlFileName
         });
     
         const levelData = [];
         hitObjects.filter(i => i.Lane && i.StartTime).forEach(hitObject => levelData.push([hitObject.Lane, hitObject.EndTime ? msToBeat(hitObject.EndTime - hitObject.StartTime, bpm) : 0, msToBeat(hitObject.StartTime, bpm)]));
         
-        fs.writeFileSync(path.join(goofyManiaMapPath, `${mapId}.gml`), JSON.stringify(levelData));
+        fs.writeFileSync(path.join(goofyManiaMapPath, gmlFileName), JSON.stringify(levelData));
     });
     
     fs.writeFileSync(path.join(goofyManiaMapPath, "map.gmm"), JSON.stringify(map));
