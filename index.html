@@ -13,7 +13,9 @@
         <button id="button" style="width: 100%; height: 100%; font-size: 5em;" onclick="start()">CLICK ME</button>
         <div id="game-container"></div>
         <script>
+            game = null;
             (async() => {
+                
                 const gameContainer = document.getElementById("game-container");
 
                 const skin = await getSkinData("/skins/default");
