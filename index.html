@@ -50,6 +50,7 @@
             })();
 
             function start() {
+                if (!game) return start();
                 game.start();
                 game.onstop = () => location.reload();
                 document.getElementById("button").remove();
