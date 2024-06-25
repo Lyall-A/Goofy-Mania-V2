@@ -48,9 +48,7 @@ class Game {
         this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
         this.createUrl("music", this.map.audio.data);
         this.createUrl("background", this.map.background.data);
-
-        setInterval(() => console.log(this.accuracy), 1000);
-
+        
         // Game loop
         this.gameLoop(async (deltaTime, loop, fps) => {
             this.runningTime += deltaTime;
