@@ -1,37 +1,42 @@
-async function getLevel(mapPath, level) {
+async function getLevelData(mapPath, level) {
     level.data = level.data || await fetch(`${mapPath}/${level.file}`).then(i => i.json());
+    
     return level;
 }
 
-async function getMap(mapPath) {
+async function getMapData(mapPath) {
     const map = await fetch(`${mapPath}/map.gmm`).then(i => i.json());
-    map.audioData = map.audioData || map.audioFile ? await fetch(`${mapPath}/${map.audioFile}`).then(i => i.blob()) : null;
-    map.coverData = map.coverData || map.coverFile ? await fetch(`${mapPath}/${map.coverFile}`).then(i => i.blob()) : null;
-    map.backgroundData = map.backgroundData || map.backgroundFile ? await fetch(`${mapPath}/${map.backgroundFile}`).then(i => i.blob()) : null;
+   
+    map.audio.data = map.audio.data || map.audio.file ? await fetch(`${mapPath}/${map.audio.file}`).then(i => i.blob()) : null;
+    map.cover.data = map.cover.data || map.cover.file ? await fetch(`${mapPath}/${map.cover.file}`).then(i => i.blob()) : null;
+    map.background.data = map.background.data || map.background.file ? await fetch(`${mapPath}/${map.background.file}`).then(i => i.blob()) : null;
+   
     return map;
 }
 
-async function loadDefaultSkin(skinPath) {
+async function getSkinData(skinPath) {
     const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
 
-    const styleElement = document.getElementById("default-skin-style");
-    styleElement.rel = "stylesheet";
-    styleElement.href = `${skinPath}/${skin.styleFile}`;
+    skin.style.data = skin.style.data || skin.style.file ? await fetch(`${skinPath}/${skin.style.file}`).then(i => i.blob()) : null;
+    for (const [key, value] of Object.entries(skin.sfx)) value.data = value.data || value.file ? await fetch(`${skinPath}/${value.file}`).then(i => i.blob()) : null;
 
-    document.head.appendChild(styleElement);
+    return skin;
 }
 
-async function loadSkin(skinPath) {
-    const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
+function loadDefaultSkin(skin) {
+    const style = document.getElementById("default-skin-style") || document.createElement("link");
+    style.rel = "stylesheet";
+    style.href = URL.createObjectURL(skin.style.data);
+    style.id = "default-skin-style";
 
-    const styleElement = document.getElementById("skin-style");
-    styleElement.rel = "stylesheet";
-    styleElement.href = `${skinPath}/${skin.styleFile}`;
-
-    document.head.appendChild(styleElement);
+    document.head.appendChild(style);
 }
 
-function convertV1ToV2(v1, min) {
-    const v2 = v1.map(i => ([i.notes, i.beat]));
-    return min ? JSON.stringify(v2) : v2;
+function loadSkin(skin) {
+    const style = document.getElementById("skin-style") || document.createElement("link");
+    style.rel = "stylesheet";
+    style.href = URL.createObjectURL(skin.style.data);
+    style.id = "skin-style";
+
+    document.head.appendChild(style);
 }

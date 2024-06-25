@@ -1,5 +1,7 @@
 {
-    "styleFile": "skin.css",
+    "style": {
+        "file": "skin.css"
+    },
     "sfx": {
         "break-combo": { "file": "break-combo.ogg" },
         "hit": { "file": "hit.ogg" }

@@ -4,49 +4,43 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Goofy Mania V2</title>
-        <link id="skin-style" rel="stylesheet">
         <link rel="stylesheet" href="./main.css">
         <script src="./main.js"></script>
         <script src="./Game.js"></script>
     </head>
     <body>
-        <button id="temp" style="width: 100%; height: 100%; font-size: 5em;" onclick="doThing(this)">CLICK ME</button>
+        <button id="button" style="width: 100%; height: 100%; font-size: 5em;" onclick="start()">CLICK ME</button>
         <div id="game-container"></div>
         <script>
-            async function doThing(e) {
-                try {
+            (async() => {
+                const gameContainer = document.getElementById("game-container");
+
+                const skin = await getSkinData("/skins/default");
+                loadDefaultSkin(skin);
+
+                // const mapPath = "/maps/Quaver - Kyu-kurarin (7_7 bootleg)";
+                const mapPath = "/maps/Quaver - Metamorphose";
+                const levelIndex = 1;
+
+                const map = await getMapData(mapPath);
+                const level = await getLevelData(mapPath, map.levels[levelIndex]);
+
                 const userSettings = {
                     scrollSpeed: 17,
                     keybinds: {
-                        "4-keys": ["d","f","j","k"],
-                        "7-keys": ["s","d","f"," ","j","k","l"]
-                    }
+                        "4-keys": "dfjk".split("")
+                    },
+                    ...skin
                 }
-                loadSkin("/skins/default");
-                // for testing
-                // const mapPath = "./maps/Quaver - JUST LIKE WE NEVER SAID GOODBYE";
-                // const mapPath = "./maps/Quaver - Bad Apple!!";
-                // const mapPath = "./maps/Quaver - Kyu-kurarin (7_7 bootleg)";
-                // const mapPath = "./maps/test";
-                // const mapPath = "./maps/Quaver - Animosity";
-                // const mapPath = "./maps/Quaver - Invisible Frenzy"; 
-                const mapPath = "./maps/Quaver - Metamorphose"; 
-                // const mapPath = "./maps/Quaver - Feral"; 
-                const levelIndex = 1;
-                const map = await getMap(mapPath);
-                const level = await getLevel(mapPath, map.levels[levelIndex]);
-                
-                document.title += ` | ${map.name}`
-                game = new Game(document.getElementById("game-container"), map, level, userSettings);
+
+                game = new Game(gameContainer, map, level, userSettings);
+            })();
+
+            function start() {
                 game.init();
                 game.start();
-                game.onstop = () => location.reload();
-                if (e) e.remove();
-            } catch (err) {
-                if (e) e.innerHTML = err;
+                document.getElementById("button").remove();
             }
-            }
-            // try { doThing(document.getElementById("temp")) } catch (err) { }
         </script>
     </body>
 </html>

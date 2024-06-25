@@ -10,9 +10,9 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
     if (!fs.existsSync(goofyManiaMapPath)) fs.mkdirSync(goofyManiaMapPath);
 
     const map = {
-        audioFile: null,
-        coverFile: null,
-        backgroundFile: null,
+        audio: { file: null },
+        cover: { file: null },
+        background: { file: null },
         name: null,
         artist: null,
         mappers: [],
@@ -50,8 +50,8 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
     
         const keys = Number(mode.split("Keys")[1]);
     
-        map.audioFile = audioFile;
-        map.backgroundFile = backgroundFile;
+        map.audio.file = audioFile;
+        map.background.file = backgroundFile;
         map.name = title;
         map.artist = artist;
         map.mappers.push({ name: creator });
