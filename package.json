@@ -16,7 +16,7 @@
     "files": [
       "!Example Quaver Maps",
       "!node_modules",
-      "*"
+      "**/*"
     ],
     "directories": {
       "output": "build"
