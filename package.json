@@ -1,0 +1,14 @@
+{
+  "name": "goofy-mania-v2",
+  "description": "",
+  "version": "1.0.0",
+  "main": "electron.js",
+  "devDependencies": {
+    "electron": "^31.1.0"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Lyall",
+  "license": "ISC"
+}
