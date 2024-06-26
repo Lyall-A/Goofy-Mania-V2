@@ -7,7 +7,7 @@
     "electron": "^31.1.0"
   },
   "scripts": {
-    "start": "electron ."
+    "start": "electron ./electron.js"
   },
   "author": "Lyall",
   "license": "ISC"

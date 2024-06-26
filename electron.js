@@ -3,8 +3,11 @@ const { app, BrowserWindow } = require("electron");
 function createWindow() {
     const window = new BrowserWindow({
         width: 1280,
-        height: 720
+        height: 720,
+        icon: "chatgpt_icon2.ico"
     });
+
+    window.setMenuBarVisibility(false)
 
     window.loadFile("index.html");
 }

@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/x-icon" href="chatgpt_icon2.ico">
         <title>Goofy Mania V2</title>
         <link rel="stylesheet" href="./main.css">
         <script src="./main.js"></script>
@@ -18,17 +19,17 @@
             (async() => {
                 const gameContainer = document.getElementById("game-container");
 
-                const skin = await getSkinData("/skins/default");
+                const skin = await getSkinData("skins/default");
                 loadDefaultSkin(skin);
 
-                // const mapPath = "/maps/Quaver - Bimbo Limbo";
-                // const mapPath = "/maps/Quaver - Endless Adventure";
-                // const mapPath = "/maps/Quaver - Wasted (Bootleg Version) (Cut Ver.)";
-                // const mapPath = "/maps/Quaver - this train going nowhere";
-                // const mapPath = "/maps/Quaver - paranoia (Extended Edit) (Sped Up Ver.)";
-                const mapPath = "/maps/Quaver - Shiawase (VIP)";
-                // const mapPath = "/maps/Quaver - Lobotomy";
-                // const mapPath = "/maps/Quaver - Everlasting Eternity (uh oh)"; // funny 7k map
+                // const mapPath = "maps/Quaver - Bimbo Limbo";
+                // const mapPath = "maps/Quaver - Endless Adventure";
+                // const mapPath = "maps/Quaver - Wasted (Bootleg Version) (Cut Ver.)";
+                // const mapPath = "maps/Quaver - this train going nowhere";
+                // const mapPath = "maps/Quaver - paranoia (Extended Edit) (Sped Up Ver.)";
+                const mapPath = "maps/Quaver - Shiawase (VIP)";
+                // const mapPath = "maps/Quaver - Lobotomy";
+                // const mapPath = "maps/Quaver - Everlasting Eternity (uh oh)"; // funny 7k map
                 // const levelIndex = 2;
                 const levelIndex = 0;
 
