@@ -67,9 +67,9 @@ class Game {
 
             if (this.running == null) {
                 // First run
-                document.onvisibilitychange = () => {
-                    if (document.hidden) this.pause();
-                }
+                // document.onvisibilitychange = () => {
+                //     if (document.hidden) this.pause();
+                // }
 
                 setTimeout(() => this.notesReady = true, this.map.offset);
                 setTimeout(async () => {
@@ -91,10 +91,10 @@ class Game {
                     this.notesToSpawn.shift();
 
                     // broken hax
-                    // setTimeout(() => {
-                    //     this.onKeyPress(noteToSpawn[0] - 1);
-                    //     setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
-                    // }, this.getMsToKey());
+                    setTimeout(() => {
+                        this.onKeyPress(noteToSpawn[0] - 1);
+                        setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
+                    }, this.getMsToKey() - 20);
                 }
             }
 

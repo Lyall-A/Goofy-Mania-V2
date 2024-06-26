@@ -15,7 +15,7 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
 
-    app.on("activate", () => !BrowserWindow.getAllWindows().length ? createWindow() : null); // Create window when app is activated (mainly for macOS))
+    app.on("activate", () => !BrowserWindow.getAllWindows().length ? createWindow() : null); // Create window when app is activated (mainly for macOS)
 });
 
 app.on("window-all-closed", () => process.platform != "darwin" ? app.quit() : null); // Since closing apps on macOS isn't really a thing
