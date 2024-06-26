@@ -32,7 +32,6 @@ class Game {
 
         this.health = 100;
         this.score = 0;
-        this.scoreNoMultiplier = 0;
         this.multiplier = 1;
         this.combo = 0;
         this.maxCombo = 0;
@@ -40,6 +39,7 @@ class Game {
         this.misses = 0;
         this.accuracy = 100.00;
         this.givenPoints = {};
+        this.scoreNoMultiplier = 0;
     }
 
     async start() {
@@ -47,6 +47,18 @@ class Game {
         this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
         this.createUrl("music", this.map.audio.data);
         this.createUrl("background", this.map.background.data);
+
+        setInterval(() => {
+            console.clear();
+            console.log("Health:", this.health);
+            console.log("Score:", this.score);
+            // console.log("Multiplier:", this.multiplier);
+            console.log("Combo:", this.combo);
+            console.log("Max Combo:", this.maxCombo);
+            console.log("Bad hits:", this.badHits);
+            console.log("Misses:", this.misses);
+            console.log("Accuracy:", this.accuracy);
+        }, 1000);
         
         // Game loop
         this.gameLoop(async (deltaTime, loop, fps) => {
@@ -76,7 +88,13 @@ class Game {
                     const noteToSpawn = this.notesToSpawn[0];
                     if (this.beatToMs(noteToSpawn[2]) + this.map.offset >= this.runningTime) break; // TODO: is this right?
                     this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
-                    this.notesToSpawn.shift(); 
+                    this.notesToSpawn.shift();
+
+                    // TESTING
+                    setTimeout(() => {
+                        this.onKeyPress(noteToSpawn[0] - 1);
+                        setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
+                    }, this.getMsToKey());
                 }
             }
 
@@ -85,8 +103,7 @@ class Game {
                 lane.notes.forEach(note => {
                     note.top += this.noteMoveAmount * deltaTime;
                     note.element.style.top = `${note.top}px`;
-                    // if (!this.gameSettings.dontCheckIfNotesOffScreen && note.element.getBoundingClientRect().top > lane.elements.key.offsetTop) {
-                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.element.getBoundingClientRect().top >= document.body.offsetHeight) {
+                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= document.body.offsetHeight) {
                         if (!lane.elements.notes.contains(note.element)) return;
                         // Missed note
                         if (this.combo) this.playSfx("combo-break");
@@ -123,7 +140,8 @@ class Game {
 
     getMsToKey(laneNum = 1) {
         const laneIndex = laneNum - 1;
-        return this.lanes[laneIndex].elements.key.offsetTop / this.noteMoveAmount;
+        const lane = this.lanes[laneIndex];
+        return (lane.elements.key.offsetTop + lane.elements.key.offsetHeight) / this.noteMoveAmount;
     }
 
     async sleep(ms) {
@@ -134,7 +152,6 @@ class Game {
         const laneIndex = laneNum - 1;
         const lane = this.lanes[laneIndex];
         let top = 0;
-        // let top = -this.getMsToKey(laneNum);
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
         noteElement.style.top = `${top}px`;
@@ -163,7 +180,7 @@ class Game {
         if (!url) return;
         const audio = new Audio(url);
         // TODO: add master volume here
-        if (options.volume) audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
+        audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
         if (options.playbackRate) audio.playbackRate = options.playbackRate;
         audio.onpause = e => audio.ended ? null : audio.play();
         await audio.play();

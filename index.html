@@ -22,21 +22,22 @@
                 loadDefaultSkin(skin);
 
                 // const mapPath = "/maps/Quaver - Bimbo Limbo";
-                const mapPath = "/maps/Quaver - Endless Adventure";
+                // const mapPath = "/maps/Quaver - Endless Adventure";
                 // const mapPath = "/maps/Quaver - Wasted (Bootleg Version) (Cut Ver.)";
                 // const mapPath = "/maps/Quaver - this train going nowhere";
+                // const mapPath = "/maps/Quaver - paranoia (Extended Edit) (Sped Up Ver.)";
                 // const mapPath = "/maps/Quaver - Shiawase (VIP)";
                 // const mapPath = "/maps/Quaver - Lobotomy";
-                // const mapPath = "/maps/Quaver - Everlasting Eternity (uh oh)"; // funny 7k map
-                const levelIndex = 2;
-                // const levelIndex = 0;
+                const mapPath = "/maps/Quaver - Everlasting Eternity (uh oh)"; // funny 7k map
+                // const levelIndex = 2;
+                const levelIndex = 0;
 
                 const map = await getMapData(mapPath);
                 const level = await getLevelData(mapPath, map.levels[levelIndex]);
 
                 const user = {
                     settings: {
-                        scrollSpeed: 20,
+                        scrollSpeed: 30,
                         masterVolume: 25,
                         musicVolume: 100,
                         sfxVolume: 25,
