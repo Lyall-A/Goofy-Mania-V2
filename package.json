@@ -1,0 +1,27 @@
+{
+  "name": "goofy-mania-v2",
+  "productName": "Goofy Mania",
+  "description": "A very original rhythm game",
+  "version": "1.0.0",
+  "main": "electron.js",
+  "devDependencies": {
+    "electron": "^31.1.0",
+    "electron-builder": "^24.13.3"
+  },
+  "scripts": {
+    "start": "electron ./electron.js",
+    "build": "electron-builder"
+  },
+  "build": {
+    "files": [
+      "!Example Quaver Maps",
+      "!node_modules",
+      "*"
+    ],
+    "directories": {
+      "output": "build"
+    }
+  },
+  "author": "Lyall",
+  "license": "ISC"
+}
