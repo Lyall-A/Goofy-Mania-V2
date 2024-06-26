@@ -4,10 +4,26 @@
   "version": "1.0.0",
   "main": "electron.js",
   "devDependencies": {
-    "electron": "^31.1.0"
+    "electron": "^31.1.0",
+    "electron-builder": "^24.13.3"
   },
   "scripts": {
-    "start": "electron ./electron.js"
+    "start": "electron ./electron.js",
+    "build": "electron-builder"
+  },
+  "build": {
+    "productName": "Goofy Mania",
+    "files": [
+      "!Example Quaver Maps",
+      "!node_modules",
+      "*"
+    ],
+    "directories": {
+      "output": "build"
+    },
+    "win": {
+      "icon": "icon.ico"
+    }
   },
   "author": "Lyall",
   "license": "ISC"
