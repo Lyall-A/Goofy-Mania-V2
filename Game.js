@@ -1,18 +1,5 @@
 class Game {
-    constructor(gameContainer, map, level, user, gameSettings = {
-        logFps: false,
-        logDeltaTime: false,
-        dontCheckIfNotesOffScreen: false,
-        maxMultiplier: 4,
-        multiplierChange: 1000, // Double the multiplier every 1000 points
-        points: [
-            { distance: 25, points: 300 },
-            { distance: 75, points: 200 },
-            { distance: 125, points: 100 },
-            { distance: 150, points: 50 },
-            { distance: 250, points: 0, isBadHit: true },
-        ]
-    }) {
+    constructor(gameContainer, map, level, user, gameSettings) {
         this.gameContainer = gameContainer;
         this.map = map;
         this.level = level;
@@ -27,9 +14,11 @@ class Game {
         this.lanes = [];
         this.urls = { },
         this.elements = { };
-        this.notesRemoved = 0;
-        this.noteMoveAmount = (this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10;
-
+        this.notesRemoved = 0; // Total amount of notes removed/despawned
+        this.audiosPlaying = 0; // Current amount of audios playing
+        this.noteMoveAmount = (this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10; // How much the note should move down each frame
+        this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
+        
         this.health = 100;
         this.score = 0;
         this.multiplier = 1;
@@ -40,14 +29,26 @@ class Game {
         this.accuracy = 100.00;
         this.givenPoints = {};
         this.scoreNoMultiplier = 0;
+
+        if (!this.gameSettings) this.gameSettings = {
+            // WARNING: the following comments are overcomplicated and need to be simplified
+            logFps: false, // Log FPS
+            logDeltaTime: false, // Log delta time
+            dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
+            maxMultiplier: 4, // Max multiplier
+            multiplierChange: 1000, // Double the multiplier every x points
+            maxAudio: 10, // Max amount of audios that can play at once
+            points: [
+                { distance: 25 * this.pointDistanceMultiplier, points: 300 },
+                { distance: 75 * this.pointDistanceMultiplier, points: 200 },
+                { distance: 125 * this.pointDistanceMultiplier, points: 100 },
+                { distance: 150 * this.pointDistanceMultiplier, points: 50 },
+                { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
+            ]
+        }
     }
 
     async start() {
-        this.createUrl("hit", this.user.skin.sfx["hit"].data);
-        this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
-        this.createUrl("music", this.map.audio.data);
-        this.createUrl("background", this.map.background.data);
-
         setInterval(() => {
             console.clear();
             console.log("Health:", this.health);
@@ -70,7 +71,6 @@ class Game {
                     if (document.hidden) this.pause();
                 }
 
-                if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
                 setTimeout(() => this.notesReady = true, this.map.offset);
                 setTimeout(async () => {
                     this.music = await this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
@@ -90,11 +90,11 @@ class Game {
                     this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
                     this.notesToSpawn.shift();
 
-                    // TESTING
-                    setTimeout(() => {
-                        this.onKeyPress(noteToSpawn[0] - 1);
-                        setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
-                    }, this.getMsToKey());
+                    // broken hax
+                    // setTimeout(() => {
+                    //     this.onKeyPress(noteToSpawn[0] - 1);
+                    //     setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
+                    // }, this.getMsToKey());
                 }
             }
 
@@ -177,25 +177,26 @@ class Game {
     }
 
     async playAudio(url, options = { }) {
-        if (!url) return;
+        if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
         const audio = new Audio(url);
-        // TODO: add master volume here
+        this.audiosPlaying++;
         audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
         if (options.playbackRate) audio.playbackRate = options.playbackRate;
         audio.onpause = e => audio.ended ? null : audio.play();
+        audio.onended = () => this.audiosPlaying--;
         await audio.play();
         return audio;
     }
 
     onKeyPress(laneIndex) {
-        this.lanes[laneIndex].elements.key.classList.toggle("pressed");
+        this.lanes[laneIndex].elements.key.classList.add("pressed")
 
         this.playSfx("hit");
         if (this.lanes[laneIndex].notes[0]) this.hitNote(laneIndex);
     }
 
     onKeyRelease(laneIndex) {
-        this.lanes[laneIndex].elements.key.classList.toggle("pressed");
+        this.lanes[laneIndex].elements.key.classList.remove("pressed");
     }
 
     pause() {
@@ -296,6 +297,15 @@ class Game {
 
             this.lanes.push({ elements: { lane: laneElement, notes: notesElement, key: keyElement }, notesSpawned: 0, keyPressed: false, notes: [] });
         }
+
+        // Create URL's (TODO)
+        this.createUrl("hit", this.user.skin.sfx["hit"].data);
+        this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
+        this.createUrl("music", this.map.audio.data);
+        this.createUrl("background", this.map.background.data);
+
+        // Set background
+        if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
 
         // Append to game container
         this.gameContainer.appendChild(this.elements.game);
