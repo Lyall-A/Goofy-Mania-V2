@@ -4,7 +4,7 @@ const fs = require("fs");
 const quaverMapPath = process.argv[2];
 const goofyManiaMapPath = process.argv[3] || "./quaver-to-goofy-mania";
 
-if (quaverMapPath && goofyManiaMapPath) quaverToGoofyMania(quaverMapPath, goofyManiaMapPath);
+if (require.main == module) quaverToGoofyMania(quaverMapPath, goofyManiaMapPath);
 
 function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
     if (!fs.existsSync(goofyManiaMapPath)) fs.mkdirSync(goofyManiaMapPath);

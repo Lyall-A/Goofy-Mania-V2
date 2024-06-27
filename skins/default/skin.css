@@ -1,4 +1,4 @@
-#game-container {
+#game {
     --key-width: 100px;
     --key-margin: 5px;
     display: flex;
@@ -6,12 +6,13 @@
     align-items: center;
     width: 100%;
     height: 100%;
+    font-family: Arial;
 }
 
-.game {
+/* .game {
     display: flex;
     height: 100%;
-}
+} */
 
 .background {
     position: absolute;
@@ -23,8 +24,23 @@
     background-size: cover;
 }
 
+.accuracy, .combo {
+    color: white;
+    font-size: 5em;
+    position: absolute;
+}
+
+.accuracy {
+    top: 25%;
+}
+
+.combo {
+    top: 10%;
+}
+
 .lanes {
     display: flex;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
 }
 

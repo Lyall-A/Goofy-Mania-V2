@@ -1,6 +1,6 @@
 class Game {
-    constructor(gameContainer, map, level, user, gameSettings) {
-        this.gameContainer = gameContainer;
+    constructor(game, map, level, user, gameSettings) {
+        this.game = game;
         this.map = map;
         this.level = level;
         this.user = user;
@@ -31,11 +31,13 @@ class Game {
         this.scoreNoMultiplier = 0;
 
         if (!this.gameSettings) this.gameSettings = {
-            // WARNING: the following comments are overcomplicated and need to be simplified
+            // TODO: simplify comments
             logFps: false, // Log FPS
             logDeltaTime: false, // Log delta time
             dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
             maxMultiplier: 4, // Max multiplier
+            maxHealth: 100, // Max health
+            defaultHealth: 50, // Default health
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             points: [
@@ -67,9 +69,9 @@ class Game {
 
             if (this.running == null) {
                 // First run
-                // document.onvisibilitychange = () => {
-                //     if (document.hidden) this.pause();
-                // }
+                document.onvisibilitychange = () => {
+                    if (document.hidden) this.pause();
+                }
 
                 setTimeout(() => this.notesReady = true, this.map.offset);
                 setTimeout(async () => {
@@ -91,10 +93,10 @@ class Game {
                     this.notesToSpawn.shift();
 
                     // broken hax
-                    setTimeout(() => {
-                        this.onKeyPress(noteToSpawn[0] - 1);
-                        setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
-                    }, this.getMsToKey() - 20);
+                    // setTimeout(() => {
+                    //     this.onKeyPress(noteToSpawn[0] - 1);
+                    //     setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
+                    // }, this.getMsToKey());
                 }
             }
 
@@ -108,7 +110,7 @@ class Game {
                         // Missed note
                         if (this.combo) this.playSfx("combo-break");
                         this.misses++;
-                        this.combo = 0;
+                        this.updateCombo(0);
                         this.removeNote(laneIndex, note);
                     }
                 });
@@ -158,17 +160,28 @@ class Game {
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
         lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
-        // if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
+        if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
         // TODO: slider height is in beats, gota calcualte somehow
-        // noteElement.style.height = sliderHeight ? `calc(${noteElement.offsetHeight}px * (1 + ${sliderHeight}))` : "auto";
+        noteElement.style.height = sliderHeight ? `${noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount)}px` : "auto";
     }
 
     removeNote(laneIndex, note) {
         const lane = this.lanes[laneIndex];
         lane.notes.splice(lane.notes.findIndex(i => i.id == note.id), 1);
         this.notesRemoved++;
-        this.accuracy = this.calculateAccuracy();
+        this.updateAccuracy();
         note.element.remove();
+    }
+
+    updateAccuracy() {
+        this.accuracy = this.calculateAccuracy();
+        this.elements.accuracy.innerHTML = `${this.accuracy.toFixed(2)}%`;
+    }
+
+    updateCombo(newCombo) {
+        this.combo = newCombo != undefined ? newCombo : this.combo + 1;
+        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        this.elements.combo.innerHTML = `${this.combo}`;
     }
 
     playSfx(sfx) {
@@ -253,12 +266,13 @@ class Game {
             return Math.abs(curr.distance - distance) < Math.abs(prev.distance - distance) ? curr : prev;
         });
 
+        // TODO: SLIDERSSSS IT NEEDS TO BE HELD DOWN HOW TF AM I GONNA DOT AHT
+
         if (pointsToAdd.isBadHit) {
-            this.combo = 0;
+            this.updateCombo(0);
             this.badHits++;
         } else {
-            this.combo++;
-            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+            this.updateCombo();
         }
 
         this.scoreNoMultiplier += pointsToAdd.points;
@@ -279,8 +293,6 @@ class Game {
         // Create lanes
         this.elements.lanes = document.createElement("div");
         this.elements.lanes.classList.add("lanes");
-        this.elements.game.appendChild(this.elements.lanes);
-
         for (let i = 0; i < this.level.keys; i++) {
             const laneElement = document.createElement("div");
             laneElement.classList.add("lane");
@@ -294,9 +306,28 @@ class Game {
             laneElement.appendChild(keyElement);
             
             this.elements.lanes.appendChild(laneElement);
-
+            
             this.lanes.push({ elements: { lane: laneElement, notes: notesElement, key: keyElement }, notesSpawned: 0, keyPressed: false, notes: [] });
         }
+
+        // TODO: create the shit like accuracy display etc
+        // Create accuracy
+        this.elements.accuracy = document.createElement("div");
+        this.elements.accuracy.classList.add("accuracy");
+        this.elements.accuracy.innerHTML = `${this.accuracy.toFixed(2)}%`;
+
+        // Create combo
+        this.elements.combo = document.createElement("div");
+        this.elements.combo.classList.add("combo");
+        this.elements.combo.innerHTML = `${this.combo}`;
+        
+        // Create score
+        this.elements.score = document.createElement("div");
+        this.elements.score.classList.add("score");
+        
+        // Create health
+        this.elements.health = document.createElement("div");
+        this.elements.health.classList.add("health");
 
         // Create URL's (TODO)
         this.createUrl("hit", this.user.skin.sfx["hit"].data);
@@ -306,10 +337,14 @@ class Game {
 
         // Set background
         if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
-
-        // Append to game container
-        this.gameContainer.appendChild(this.elements.game);
-        this.gameContainer.appendChild(this.elements.background);
+        
+        // Append to game
+        this.game.appendChild(this.elements.lanes);
+        this.game.appendChild(this.elements.background);
+        this.game.appendChild(this.elements.accuracy);
+        this.game.appendChild(this.elements.combo);
+        this.game.appendChild(this.elements.score);
+        this.game.appendChild(this.elements.health);
 
         // Create events
         addEventListener("keydown", this.onKeyDown);
