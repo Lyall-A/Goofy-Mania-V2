@@ -93,10 +93,10 @@ class Game {
                     this.notesToSpawn.shift();
 
                     // broken hax
-                    // setTimeout(() => {
-                    //     this.onKeyPress(noteToSpawn[0] - 1);
-                    //     setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
-                    // }, this.getMsToKey());
+                    setTimeout(() => {
+                        this.onKeyPress(noteToSpawn[0] - 1);
+                        setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
+                    }, this.getMsToKey() - 20);
                 }
             }
 
@@ -160,8 +160,7 @@ class Game {
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
         lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
-        if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>"
-        // TODO: slider height is in beats, gota calcualte somehow
+        if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>" // TODO
         noteElement.style.height = sliderHeight ? `${noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount)}px` : "auto";
     }
 
