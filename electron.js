@@ -16,6 +16,7 @@ function createWindow() {
     const window = new BrowserWindow({
         width: 1280,
         height: 720,
+        title: "Goofy Mania",
         icon: "icon.ico",
         webPreferences: {
             nodeIntegration: true,

@@ -22,12 +22,18 @@
                 const skin = await getSkinData("skins/default");
                 loadDefaultSkin(skin);
 
-                const mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
-                const levelIndex = 2;
+                // const mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
+                // const levelIndex = 2;
                 // const mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
                 // const levelIndex = 0;
                 // const mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
                 // const levelIndex = 9;
+                // const mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
+                // const levelIndex = 0;
+                // const mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
+                // const levelIndex = 0;
+                const mapPath = `maps\\Quaver - Dreamworks - Shrek Movie - 57335`;
+                const levelIndex = 0;
 
                 const map = await getMapData(mapPath);
                 const level = await getLevelData(mapPath, map.levels[levelIndex]);
@@ -47,7 +53,8 @@
                         }
                     },
                     modifiers: {
-                        auto: false // TODO
+                        // auto: false // TODO
+                        // auto: true // TODO
                     },
                     skin
                 }
