@@ -79,9 +79,8 @@ class Game {
 
                 setTimeout(() => this.notesReady = true, this.map.offset);
                 setTimeout(async () => {
-                    this.music = await this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
+                    this.music = this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
                     this.music.onended = () => this.stop();
-                    this.music.onplaying = () => console.log("WHY IS THIS HAPPENING!!!!!!!!!!!");
                 }, this.getMsToKey());
 
                 this.startTime = Date.now();
@@ -192,7 +191,7 @@ class Game {
         this.playAudio(this.urls[sfx], { volume: this.user.settings.sfxVolume });
     }
 
-    async playAudio(url, options = { }) {
+    playAudio(url, options = { }) {
         if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
         const audio = new Audio(url);
         this.audiosPlaying++;
@@ -200,7 +199,7 @@ class Game {
         if (options.playbackRate) audio.playbackRate = options.playbackRate;
         audio.onpause = e => audio.ended ? null : audio.play();
         audio.onended = () => this.audiosPlaying--;
-        await audio.play();
+        audio.oncanplay = () => audio.play();
         return audio;
     }
 
