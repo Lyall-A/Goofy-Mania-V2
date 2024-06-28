@@ -1,5 +1,5 @@
 async function getLevelData(mapPath, level) {
-    level.data = level.data || await fetch(`${mapPath}/${level.file}`).then(i => i.json());
+    level.data = await getData(mapPath, level, "json");
     
     return level;
 }
@@ -7,9 +7,9 @@ async function getLevelData(mapPath, level) {
 async function getMapData(mapPath) {
     const map = await fetch(`${mapPath}/map.gmm`).then(i => i.json());
    
-    map.audio.data = map.audio.data || map.audio.file ? await fetch(`${mapPath}/${map.audio.file}`).then(i => i.blob()) : null;
-    map.cover.data = map.cover.data || map.cover.file ? await fetch(`${mapPath}/${map.cover.file}`).then(i => i.blob()) : null;
-    map.background.data = map.background.data || map.background.file ? await fetch(`${mapPath}/${map.background.file}`).then(i => i.blob()) : null;
+    map.audio.data = await getData(mapPath, map.audio);
+    map.cover.data = await getData(mapPath, map.cover);
+    map.background.data = await getData(mapPath, map.background);
    
     return map;
 }
@@ -17,8 +17,10 @@ async function getMapData(mapPath) {
 async function getSkinData(skinPath) {
     const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
 
-    skin.style.data = skin.style.data || skin.style.file ? await fetch(`${skinPath}/${skin.style.file}`).then(i => i.blob()) : null;
-    for (const [key, value] of Object.entries(skin.sfx)) value.data = value.data || value.file ? await fetch(`${skinPath}/${value.file}`).then(i => i.blob()) : null;
+    skin.style.data = await getData(skinPath, skin.style);
+    for (const [key, value] of Object.entries(skin.sfx)) value.data = await getData(skinPath, value);
+    for (const [key, value] of Object.entries(skin.hitScores[1])) value.data = await getData(skinPath, value);
+    skin.hitScores[0].data = await getData(skinPath, skin.hitScores[0]);
 
     return skin;
 }
@@ -39,4 +41,13 @@ function loadSkin(skin) {
     style.id = "skin-style";
 
     document.head.appendChild(style);
+}
+
+async function getData(path, obj, type) {
+    return obj.data || obj.file ? await fetch(`${path}/${obj.file}`).then(i => i[type || "blob"]()) : null;
+}
+
+// Electron stuff
+if (typeof process != "undefined" && process.versions?.electron != undefined) {
+    const { ipcRenderer } = require("electron");
 }

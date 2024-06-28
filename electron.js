@@ -1,10 +1,26 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron");
+// const path = require("path");
+// const ffi = require('ffi-napi');
+// const ref = require('ref-napi');
+
+// const appId = "1021392767403966464";
+
+// const { int: intType, void: voidType } = ref.types;
+
+// const discordGameSdk = ffi.Library(path.resolve("discord_game_sdk", "lib", "x86_64", "discord_game_sdk.dll"), {
+//     "DiscordCreate": ["pointer", ["int", "pointer"]],
+//     "DiscordUpdateActivity": [voidType, ["pointer", "pointer"]],
+// });
 
 function createWindow() {
     const window = new BrowserWindow({
         width: 1280,
         height: 720,
-        icon: "icon.ico"
+        icon: "icon.ico",
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        }
     });
 
     window.setMenuBarVisibility(false)
@@ -19,3 +35,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => process.platform != "darwin" ? app.quit() : null); // Since closing apps on macOS isn't really a thing
+
+ipcMain.on("update-discord-activity", (event, args) => {
+    
+});

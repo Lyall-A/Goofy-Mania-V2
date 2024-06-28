@@ -4,40 +4,40 @@
     },
     "sfx": {
         "combo-break": { "file": "combo-break.ogg" },
+        "bad-hit": { "file": "combo-break.ogg" },
         "hit": { "file": "hit.wav" }
     },
     "hitScores": [
         {
             "type": "text",
             "hideAfter": 150,
-            "value": "???????"
+            "text": "FIX ME"
         },
         {
             "300": {
-                "type": "text",
+                "type": "image",
                 "hideAfter": 150,
-                "value": "PERFECT"
+                "file": "perfect.png"
             },
             "200": {
-                "type": "text",
+                "type": "image",
                 "hideAfter": 150,
-                "value": "GOOD"
+                "file": "great.png"
             },
             "100": {
-                "type": "text",
+                "type": "image",
                 "hideAfter": 150,
-                "value": "HORRIBLE"
+                "file": "good.png"
             },
             "50": {
-                "type": "text",
+                "type": "image",
                 "hideAfter": 150,
-                "value": "SHIT"
+                "file": "bad.png"
             },
             "0": {
-                "type": "text",
+                "type": "image",
                 "hideAfter": 150,
-                "value": "BAD HIT",
-                "styles": { "color": "red" }
+                "file": "bad hit.png"
             }
         }
     ]

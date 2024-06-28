@@ -4,13 +4,13 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/x-icon" href="icon.ico">
-        <title>Goofy Mania V2</title>
+        <title>Goofy Mania</title>
         <link rel="stylesheet" href="./main.css">
         <script src="./main.js"></script>
         <script src="./Game.js"></script>
     </head>
     <body>
-        <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA V2<br>V0.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY</div>
+        <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
         <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;" onclick="start()">CLICK ME</button>
         <div id="game"></div>
         <script>
@@ -22,22 +22,24 @@
                 const skin = await getSkinData("skins/default");
                 loadDefaultSkin(skin);
 
-                // const mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
-                // const levelIndex = 2;
-                const mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
-                const levelIndex = 0;
+                const mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
+                const levelIndex = 2;
+                // const mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
+                // const levelIndex = 0;
+                // const mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
+                // const levelIndex = 9;
 
                 const map = await getMapData(mapPath);
                 const level = await getLevelData(mapPath, map.levels[levelIndex]);
 
                 const user = {
                     settings: {
-                        // scrollSpeed: 17,
-                        scrollSpeed: 40,
-                        masterVolume: 5,
+                        scrollSpeed: 17,
+                        // scrollSpeed: 40,
+                        masterVolume: 15,
                         musicVolume: 100,
                         // musicVolume: 10,
-                        sfxVolume: 100,
+                        sfxVolume: 25,
                         
                         keybinds: {
                             "4-keys": "dfjk".split(""),
@@ -45,7 +47,7 @@
                         }
                     },
                     modifiers: {
-                        auto: true // TODO
+                        auto: false // TODO
                     },
                     skin
                 }

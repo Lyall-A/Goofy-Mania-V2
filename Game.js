@@ -16,6 +16,7 @@ class Game {
         this.timeouts = { };
         this.intervals = { };
         this.elements = { };
+        this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesRemoved = 0; // Total amount of notes removed/despawned
         this.audiosPlaying = 0; // Current amount of audios playing
@@ -44,11 +45,11 @@ class Game {
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             points: [
-                { distance: 50 * this.pointDistanceMultiplier, points: 300 },
-                { distance: 100 * this.pointDistanceMultiplier, points: 200 },
-                { distance: 150 * this.pointDistanceMultiplier, points: 100 },
-                { distance: 200 * this.pointDistanceMultiplier, points: 50 },
-                { distance: 300 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
+                { distance: 40 * this.pointDistanceMultiplier, points: 300 },
+                { distance: 75 * this.pointDistanceMultiplier, points: 200 },
+                { distance: 125 * this.pointDistanceMultiplier, points: 100 },
+                { distance: 175 * this.pointDistanceMultiplier, points: 50 },
+                { distance: 400 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
             ]
         }
     }
@@ -95,8 +96,8 @@ class Game {
                     this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
                     this.notesToSpawn.shift();
 
-                    // broken hax
-                    setTimeout(() => {
+                    // broken hax TEMP
+                    if (this.user.modifiers.auto) setTimeout(() => {
                         this.onKeyPress(noteToSpawn[0] - 1);
                         setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
                     }, this.getMsToKey());
@@ -164,7 +165,6 @@ class Game {
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
         lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
-        if (sliderHeight) noteElement.innerHTML = "<h1 style=\"position: absolute;\">no slider implementation :P</h1>" // TODO
         noteElement.style.height = sliderHeight ? `${noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount)}px` : "auto";
     }
 
@@ -272,6 +272,7 @@ class Game {
         // TODO: SLIDERSSSS IT NEEDS TO BE HELD DOWN HOW TF AM I GONNA DOT AHT
 
         if (pointsToAdd.isBadHit) {
+            this.playSfx("bad-hit");
             this.updateCombo(0);
             this.badHits++;
         } else {
@@ -290,12 +291,14 @@ class Game {
         this.elements.hitScore.style.display = "none";
         clearTimeout(this.timeouts.hitScoreHide);
         setTimeout(() => {
-            const hitScore = { ...this.defaultHitScore, ...this.user.skin.hitScores[1][points] };
+            const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
             this.elements.hitScore.style.display = "";
             Object.entries(hitScore.styles || { }).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
 
             if (hitScore.type == "text") {
-                this.elements.hitScore.innerHTML = hitScore.value;
+                this.elements.hitScore.innerHTML = hitScore.text;
+            } else if (hitScore.type == "image") {
+                this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
             }
             
             this.timeouts.hitScoreHide = setTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter);
@@ -355,10 +358,15 @@ class Game {
         this.elements.health.classList.add("health");
 
         // Create URL's (TODO)
+        // SFX
         this.createUrl("hit", this.user.skin.sfx["hit"].data);
         this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
+        this.createUrl("bad-hit", this.user.skin.sfx["bad-hit"].data);
         this.createUrl("music", this.map.audio.data);
+        // Assets
         this.createUrl("background", this.map.background.data);
+        if (this.defaultHitScore.data) this.createUrl("default-hit-score", this.defaultHitScore.data);
+        Object.entries(this.hitScores).filter(i => i[1].data).forEach(([key, value]) => this.createUrl(`${key}-hit-score`, value.data));
 
         // Set background
         if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
