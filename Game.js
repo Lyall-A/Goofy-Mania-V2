@@ -105,7 +105,8 @@ class Game {
                 lane.notes.forEach(note => {
                     note.top += this.noteMoveAmount * deltaTime;
                     note.element.style.top = `${note.top}px`;
-                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= document.body.offsetHeight) {
+                    // if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= document.body.offsetHeight) {
+                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
                         if (!lane.elements.notes.contains(note.element)) return;
                         // Missed note
                         if (this.combo) this.playSfx("combo-break");

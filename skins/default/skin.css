@@ -1,5 +1,5 @@
 #game {
-    --key-width: 100px;
+    --key-width: 7vh;
     --key-margin: 5px;
     display: flex;
     justify-content: center;
