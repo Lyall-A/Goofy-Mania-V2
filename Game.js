@@ -13,7 +13,10 @@ class Game {
         this.runningTime = 0;
         this.lanes = [];
         this.urls = { },
+        this.timeouts = { };
+        this.intervals = { };
         this.elements = { };
+        this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesRemoved = 0; // Total amount of notes removed/despawned
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10; // How much the note should move down each frame
@@ -41,27 +44,27 @@ class Game {
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             points: [
-                { distance: 25 * this.pointDistanceMultiplier, points: 300 },
-                { distance: 75 * this.pointDistanceMultiplier, points: 200 },
-                { distance: 125 * this.pointDistanceMultiplier, points: 100 },
-                { distance: 150 * this.pointDistanceMultiplier, points: 50 },
-                { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
+                { distance: 50 * this.pointDistanceMultiplier, points: 300 },
+                { distance: 100 * this.pointDistanceMultiplier, points: 200 },
+                { distance: 150 * this.pointDistanceMultiplier, points: 100 },
+                { distance: 200 * this.pointDistanceMultiplier, points: 50 },
+                { distance: 300 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
             ]
         }
     }
 
     async start() {
-        setInterval(() => {
-            console.clear();
-            console.log("Health:", this.health);
-            console.log("Score:", this.score);
-            // console.log("Multiplier:", this.multiplier);
-            console.log("Combo:", this.combo);
-            console.log("Max Combo:", this.maxCombo);
-            console.log("Bad hits:", this.badHits);
-            console.log("Misses:", this.misses);
-            console.log("Accuracy:", this.accuracy);
-        }, 1000);
+        // setInterval(() => {
+        //     console.clear();
+        //     console.log("Health:", this.health);
+        //     console.log("Score:", this.score);
+        //     // console.log("Multiplier:", this.multiplier);
+        //     console.log("Combo:", this.combo);
+        //     console.log("Max Combo:", this.maxCombo);
+        //     console.log("Bad hits:", this.badHits);
+        //     console.log("Misses:", this.misses);
+        //     console.log("Accuracy:", this.accuracy);
+        // }, 1000);
         
         // Game loop
         this.gameLoop(async (deltaTime, loop, fps) => {
@@ -96,7 +99,7 @@ class Game {
                     setTimeout(() => {
                         this.onKeyPress(noteToSpawn[0] - 1);
                         setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
-                    }, this.getMsToKey() - 20);
+                    }, this.getMsToKey());
                 }
             }
 
@@ -275,10 +278,28 @@ class Game {
             this.updateCombo();
         }
 
+        this.setHitScore(pointsToAdd.points);
         this.scoreNoMultiplier += pointsToAdd.points;
         this.score += pointsToAdd.points * this.multiplier;
         this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         this.removeNote(laneIndex, closestNote);
+    }
+
+    setHitScore(points) {
+        this.elements.hitScore.removeAttribute("style");
+        this.elements.hitScore.style.display = "none";
+        clearTimeout(this.timeouts.hitScoreHide);
+        setTimeout(() => {
+            const hitScore = { ...this.defaultHitScore, ...this.user.skin.hitScores[1][points] };
+            this.elements.hitScore.style.display = "";
+            Object.entries(hitScore.styles || { }).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
+
+            if (hitScore.type == "text") {
+                this.elements.hitScore.innerHTML = hitScore.value;
+            }
+            
+            this.timeouts.hitScoreHide = setTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter);
+        });
     }
 
     init() {
@@ -316,6 +337,10 @@ class Game {
         this.elements.accuracy.classList.add("accuracy");
         this.elements.accuracy.innerHTML = `${this.accuracy.toFixed(2)}%`;
 
+        // Create hit score
+        this.elements.hitScore = document.createElement("div");
+        this.elements.hitScore.classList.add("hit-score");
+
         // Create combo
         this.elements.combo = document.createElement("div");
         this.elements.combo.classList.add("combo");
@@ -342,6 +367,7 @@ class Game {
         this.game.appendChild(this.elements.lanes);
         this.game.appendChild(this.elements.background);
         this.game.appendChild(this.elements.accuracy);
+        this.game.appendChild(this.elements.hitScore);
         this.game.appendChild(this.elements.combo);
         this.game.appendChild(this.elements.score);
         this.game.appendChild(this.elements.health);

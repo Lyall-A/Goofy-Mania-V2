@@ -1,5 +1,5 @@
 #game {
-    --key-width: 7vh;
+    --key-width: 9vh;
     --key-margin: 5px;
     display: flex;
     justify-content: center;
@@ -22,11 +22,12 @@
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
+    /* filter: blur(5px); */
 }
 
-.accuracy, .combo {
+.accuracy, .combo, .hit-score {
     color: white;
-    font-size: 5em;
+    font-size: 2.5em;
     position: absolute;
 }
 
@@ -37,6 +38,12 @@
 .combo {
     top: 10%;
 }
+
+.hit-score {
+    transform: scale(0.5);
+    animation: hit-score 0.15s;
+}
+@keyframes hit-score { 100% { transform: scale(1); } }
 
 .lanes {
     display: flex;
