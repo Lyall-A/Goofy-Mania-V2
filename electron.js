@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
-// const path = require("path");
-// const ffi = require('ffi-napi');
-// const ref = require('ref-napi');
+
+const discordGameSDK = koffi.load(path.resolve("discord_game_sdk", "lib", "x86_64", "discord_game_sdk.dll"));
+const DiscordCreate = discordGameSDK.func("EDiscordResult DiscordCreate(DiscordVersion version, struct DiscordCreateParams* params, struct IDiscordCore** result)");
 
 // const appId = "1021392767403966464";
 

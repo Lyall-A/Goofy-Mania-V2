@@ -6,7 +6,8 @@
   "main": "electron.js",
   "dependencies": {
     "electron": "^31.1.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "koffi": "^2.8.11"
   },
   "scripts": {
     "start": ".\\node_modules\\electron\\dist\\electron ./electron.js",
