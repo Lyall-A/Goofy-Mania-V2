@@ -4,12 +4,12 @@
   "description": "A very original rhythm game",
   "version": "1.0.0",
   "main": "electron.js",
-  "devDependencies": {
+  "dependencies": {
     "electron": "^31.1.0",
     "electron-builder": "^24.13.3"
   },
   "scripts": {
-    "start": "electron ./electron.js",
+    "start": ".\\node_modules\\electron\\dist\\electron ./electron.js",
     "build": "electron-builder"
   },
   "build": {
