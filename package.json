@@ -7,11 +7,13 @@
   "dependencies": {
     "electron": "^31.1.0",
     "electron-builder": "^24.13.3",
-    "koffi": "^2.8.11"
+    "koffi": "^2.8.11",
+    "node-gyp": "^10.1.0"
   },
   "scripts": {
     "start": ".\\node_modules\\electron\\dist\\electron ./electron.js",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build-addon": "node-gyp"
   },
   "build": {
     "files": [

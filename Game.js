@@ -20,7 +20,7 @@ class Game {
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesRemoved = 0; // Total amount of notes removed/despawned
         this.audiosPlaying = 0; // Current amount of audios playing
-        this.noteMoveAmount = (this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10; // How much the note should move down each frame
+        this.noteMoveAmount = ((this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
         
         this.health = 100;
@@ -108,7 +108,6 @@ class Game {
                 lane.notes.forEach(note => {
                     note.top += this.noteMoveAmount * deltaTime;
                     note.element.style.top = `${note.top}px`;
-                    // if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= document.body.offsetHeight) {
                     if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
                         if (!lane.elements.notes.contains(note.element)) return;
                         // Missed note
@@ -160,6 +159,7 @@ class Game {
         let top = 0;
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
+        noteElement.classList.add(`note-${this.lanes.length}-${laneNum}`);
         noteElement.style.top = `${top}px`;
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
@@ -241,7 +241,7 @@ class Game {
         });
 
         // Call event
-        this.onstop();
+        this.onstop?.();
     }
 
     calculateAccuracy() {

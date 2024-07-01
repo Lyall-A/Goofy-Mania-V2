@@ -1,18 +1,16 @@
 #game {
-    --key-width: 9vh;
-    --key-margin: 5px;
+    --lane-width: 100px;
+    /* --lane-width: 20%; */
+    --lane-margin: 5px;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
     font-family: Arial;
+    position: relative;
+    overflow: hidden;
 }
-
-/* .game {
-    display: flex;
-    height: 100%;
-} */
 
 .background {
     position: absolute;
@@ -43,44 +41,49 @@
     transform: scale(0.5);
     animation: hit-score 0.15s;
 }
-@keyframes hit-score { 100% { transform: scale(1); } }
+@keyframes hit-score { 100% { transform: scale(0.75); } }
 
 .lanes {
     display: flex;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
+    position: relative;
+    min-width: var(--lane-width);
 }
 
 .lane {
     display: flex;
     justify-content: flex-end;
     flex-direction: column;
-    margin-left: var(--key-margin);
-    margin-right: var(--key-margin);
+    margin-left: var(--lane-margin);
+    margin-right: var(--lane-margin);
+    min-width: var(--lane-width);
+    position: relative;
 }
 
 .notes {
-    position: absolute;
     height: 100%;
     width: var(--key-width);
-    overflow: hidden;
 }
 
 .note {
-    background-color: rgb(140, 18, 255);
+    background-color: rgb(196, 196, 196);
     transform: translateY(-100%);
     position: absolute;
     aspect-ratio: 1;
-    border-radius: calc(var(--key-width) / 2);
-    width: var(--key-width);
+    border-radius: calc(var(--lane-width) / 2);
+    width: 100%;
     height: auto;
+}
+
+.note-4-2, .note-4-3 {
+    background-color: rgb(72, 145, 255);
 }
 
 .key {
     z-index: 0;
     margin-bottom: 75px;
-    width: var(--key-width);
-    min-height: var(--key-width);
+    min-width: 100%;
     aspect-ratio: 1;
     border-radius: 50%;
     border: 2px solid rgb(182, 182, 182);
