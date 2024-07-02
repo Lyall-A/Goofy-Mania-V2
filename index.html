@@ -12,10 +12,9 @@
 </head>
 
 <body>
-    <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001
-        ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
-    <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;"
-        onclick="start()"></button>
+    <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
+    <div id="fps" style="position: absolute; bottom: 20px; left: 20px; font-family: Arial; color: red; font-size: 2em;">FPS: ermmm what the sigma</div>
+    <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;" onclick="start()"></button>
     <!-- <div id="game" style="max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div> -->
     <div id="game"></div>
     <script>
@@ -23,6 +22,7 @@
 
         (async () => {
             const gameElement = document.getElementById("game");
+            const fps = document.getElementById("fps");
 
             document.getElementById("button").innerHTML = "LOADING SKIN";
             const skin = await getSkinData("skins/default");
@@ -31,20 +31,22 @@
             let mapPath;
             let levelIndex;
 
-            // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
-            // levelIndex = 2;
-            // mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
-            // levelIndex = 0;
+            // mapPath = `maps\\Quaver - Chroma - I - 51373`;
+            // levelIndex = 6;
             // mapPath = `maps\\Quaver - coltrane - this train going nowhere - 186409`;
             // levelIndex = 0;
-            // mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
-            // levelIndex = 9;
-            mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
-            levelIndex = 0;
+            // mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
+            // levelIndex = 0;
             // mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
             // levelIndex = 0;
-            // mapPath = `maps\\Quaver - Dreamworks - Shrek Movie - 57335`;
-            // levelIndex = 0;
+            mapPath = `maps\\Quaver - Slax - Bimbo Limbo - 755947`;
+            levelIndex = 0;
+            mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
+            levelIndex = 9;
+            mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
+            levelIndex = 0;
+            // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
+            // levelIndex = 2;
 
             document.getElementById("button").innerHTML = "GETTING MAP DATA";
             map = await getMapData(mapPath);
@@ -66,9 +68,10 @@
                     }
                 },
                 modifiers: {
-                    // auto: false // TODO
-                    auto: true, // TODO
+                    auto: true,
+                    // speed: 1,
                     speed: 1.5,
+                    // pitch: false
                     pitch: true
                 },
                 skin
@@ -84,12 +87,13 @@
             if (!game) return;
             game.start();
             game.once("onStopping", () => location.reload())
+            game.on("onFpsUpdate", i => fps.innerHTML = `FPS: ${i}`);
             document.getElementById("button").remove();
         }
 
         async function changeMapTest(mapName, levelIndex) {
             const map = await getMapData(`maps\\${mapName}`)
-            const level = await getLevelData(`maps\\${mapName}`, map.levels[0])
+            const level = await getLevelData(`maps\\${mapName}`, map.levels[levelIndex])
             
             game.onStopping = null;
             game.once("onGameLoopStop", () => {

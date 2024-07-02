@@ -80,6 +80,14 @@
     background-color: rgb(64, 140, 255);
 }
 
+.note-7-1 { background-color: red; }
+.note-7-2 { background-color: blue; }
+.note-7-3 { background-color: violet; }
+.note-7-4 { background-color: tan; }
+.note-7-5 { background-color: tomato; }
+.note-7-6 { background-color: green; }
+.note-7-7 { background-color: gold; }
+
 .key {
     z-index: 0;
     margin-bottom: 75px;

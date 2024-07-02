@@ -17,6 +17,7 @@ class Game {
         this.notesToSpawn = [...this.level.data];
         this.runningTime = 0;
         this.lanes = [];
+        this.intervals = [ ];
         this.timeouts = [];
         this.urls = {};
         this.elements = {};
@@ -26,8 +27,32 @@ class Game {
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = ((this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
+        this.fpsHistory = [ ];
+        
+        if (!this.gameSettings) this.gameSettings = {
+            // TODO: simplify comments
+            captureFps: true, // Capture FPS
+            logFps: false, // Log FPS
+            dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
+            maxMultiplier: 4, // Max multiplier
+            maxHealth: 100, // Max health
+            defaultHealth: 50, // Default health
+            minSpeed: 0.5, // Modifier: Speed
+            maxSpeed: 2, // Modifier: Speed
+            multiplierChange: 1000, // Double the multiplier every x points
+            maxAudio: 10, // Max amount of audios that can play at once
+            points: [
+                { distance: 40 * this.pointDistanceMultiplier, points: 300 },
+                { distance: 75 * this.pointDistanceMultiplier, points: 200 },
+                { distance: 125 * this.pointDistanceMultiplier, points: 100 },
+                { distance: 175 * this.pointDistanceMultiplier, points: 50 },
+                { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
+            ]
+        }
 
-        this.health = 100;
+        this.speed = this.user.modifiers.speed ? Math.max(this.gameSettings.minSpeed, Math.min(this.gameSettings.maxSpeed, this.user.modifiers.speed)) : 1;
+
+        this.health = this.gameSettings.defaultHealth;
         this.score = 0;
         this.multiplier = 1;
         this.combo = 0;
@@ -37,25 +62,6 @@ class Game {
         this.accuracy = 100.00;
         this.givenPoints = {};
         this.scoreNoMultiplier = 0;
-
-        if (!this.gameSettings) this.gameSettings = {
-            // TODO: simplify comments
-            logFps: false, // Log FPS
-            logDeltaTime: false, // Log delta time
-            dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
-            maxMultiplier: 4, // Max multiplier
-            maxHealth: 100, // Max health
-            defaultHealth: 50, // Default health
-            multiplierChange: 1000, // Double the multiplier every x points
-            maxAudio: 10, // Max amount of audios that can play at once
-            points: [
-                { distance: 40 * this.pointDistanceMultiplier, points: 300 },
-                { distance: 75 * this.pointDistanceMultiplier, points: 200 },
-                { distance: 125 * this.pointDistanceMultiplier, points: 100 },
-                { distance: 175 * this.pointDistanceMultiplier, points: 50 },
-                { distance: 400 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
-            ]
-        }
 
         // Create game
         this.elements.game = document.createElement("div");
@@ -147,13 +153,23 @@ class Game {
         this.gameLoop((deltaTime, loop, fps) => {
             this.runningTime += deltaTime;
 
+            // Run timeouts
             for (const i in this.timeouts) {
                 if (!this.timeouts[i]) continue;
                 const [callback, ms, time] = this.timeouts[i];
                 if (this.runningTime >= time + ms) {
                     callback();
                     this.timeouts[i] = null;
-                    // this.timeouts.splice(i, 1);
+                }
+            }
+            
+            // Run intervals
+            for (const i in this.intervals) {
+                if (!this.intervals[i]) continue;
+                const [callback, ms, time] = this.intervals[i];
+                if (this.runningTime >= time + ms) {
+                    callback();
+                    this.intervals[i][2] = time + ms;
                 }
             }
             
@@ -165,11 +181,18 @@ class Game {
                 this.gameTimeout(() => {
                     this.music = this.playAudio(this.urls["music"], {
                         volume: this.user.settings.musicVolume,
-                        playbackRate: this.user.modifiers.speed, // Modifier: Speed
+                        playbackRate: this.speed, // Modifier: Speed
                         changePitch: this.user.modifiers.pitch // Modifier: Pitch
                     });
                     this.music.onended = () => this.stop();
                 }, this.getMsToKey());
+
+                if (this.gameSettings.captureFps) this.gameInterval(() => {
+                    const fps = Math.round((this.fpsHistory.reduce((prev, curr) => prev + curr) / this.fpsHistory.length) || 0)
+                    if (this.gameSettings.logFps) console.log("FPS:", fps);
+                    this.call("onFpsUpdate", fps);
+                    this.fpsHistory = [ ];
+                }, 1000);
 
                 this.startTime = Date.now();
                 this.running = true;
@@ -179,7 +202,7 @@ class Game {
             if (this.notesReady) {
                 for (const i in { ...this.notesToSpawn }) { // the fuck?
                     const noteToSpawn = this.notesToSpawn[0];
-                    if (this.beatToMs(noteToSpawn[2] / this.user.modifiers.speed) + this.map.offset >= this.runningTime) break; // TODO: is this right?
+                    if (this.beatToMs(noteToSpawn[2] / this.speed) + this.map.offset >= this.runningTime) break; // TODO: is this right?
                     this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
                     this.notesToSpawn.shift();
 
@@ -201,16 +224,21 @@ class Game {
                         // Missed note
                         if (this.combo) this.playSfx("combo-break");
                         this.misses++;
+                        this.health = Math.min(0, this.health - 1);
                         this.updateCombo(0);
                         this.removeNote(laneIndex, note);
                     }
                 });
             });
 
-            if (this.gameSettings.logFps) console.log(`FPS: ${fps}`);
-            if (this.gameSettings.logDeltaTime) console.log(`Delta Time: ${deltaTime}`);
+            if (this.health <= 0) {
+                // TODO: death.
+                console.log("DEATH")
+            }
 
-            if (this.running) loop(); else this.onGameLoopStop?.();
+            if (this.gameSettings.captureFps) this.fpsHistory.push(fps);
+
+            if (this.running) loop(); else this.call("onGameLoopStop");
         });
     }
 
@@ -245,7 +273,7 @@ class Game {
         }
         
         // Call event
-        this.onStopping?.();
+        this.call("onStopping");
     }
 
     pause() {
@@ -387,8 +415,10 @@ class Game {
             this.playSfx("bad-hit");
             this.updateCombo(0);
             this.badHits++;
+            this.health = Math.min(0, this.health - 1);
         } else {
             this.updateCombo();
+            this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
         }
 
         this.setHitScore(pointsToAdd.points);
@@ -415,8 +445,13 @@ class Game {
     }
 
     gameTimeout(callback, ms = 0) {
-        const index = this.timeouts.push([callback, ms, this.runningTime]) - 1;
-        return () => delete this.timeouts[index];
+        const index = this.timeouts.push([callback, ms, this.runningTime || 0]) - 1;
+        return () => this.timeouts[index] = null;
+    }
+
+    gameInterval(callback, ms = 0) {
+        const index = this.intervals.push([callback, ms, this.runningTime || 0]) - 1;
+        return () => this.intervals[index] = null
     }
 
     // Events
@@ -441,18 +476,23 @@ class Game {
     // Game events
     on(name, callback) {
         const func = this[name];
-        this[name] = () => { func?.(); callback(); }; 
+        this[name] = (...args) => { func?.(...args); callback(...args); }
     }
 
     once(name, callback) {
         const func = this[name];
-        this[name] = () => { func?.(); callback(); this[name] = func; }
+        this[name] = () => { func?.(...args); callback(...args); this[name] = func; }
     }
 
     removeAllEventCallbacks(name) {
         this[name] = null;
     }
 
+    call(name, ...args) {
+        this[name]?.(...args);
+    }
+
     onStopping() { }
     onGameLoopStop() { }
+    onFpsUpdate() { }
 }
