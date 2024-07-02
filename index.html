@@ -1,87 +1,107 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" type="image/x-icon" href="icon.ico">
-        <title>Goofy Mania</title>
-        <link rel="stylesheet" href="./main.css">
-        <script src="./main.js"></script>
-        <script src="./Game.js"></script>
-    </head>
-    <body>
-        <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
-        <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;" onclick="start()"></button>
-        <!-- <div id="game" style="max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div> -->
-        <div id="game"></div>
-        <script>
-            game = null;
-            
-            (async() => {
-                const gameElement = document.getElementById("game");
 
-                document.getElementById("button").innerHTML = "LOADING SKIN";
-                const skin = await getSkinData("skins/default");
-                loadDefaultSkin(skin);
-                
-                let mapPath;
-                let levelIndex;
-                
-                // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
-                // levelIndex = 2;
-                // mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
-                // levelIndex = 0;
-                // mapPath = `maps\\Quaver - coltrane - this train going nowhere - 186409`;
-                // levelIndex = 0;
-                // mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
-                // levelIndex = 9;
-                mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
-                levelIndex = 0;
-                // mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
-                // levelIndex = 0;
-                // mapPath = `maps\\Quaver - Dreamworks - Shrek Movie - 57335`;
-                // levelIndex = 0;
-                
-                document.getElementById("button").innerHTML = "GETTING MAP DATA";
-                map = await getMapData(mapPath);
-                document.getElementById("button").innerHTML = "GETTING LEVEL DATA";
-                level = await getLevelData(mapPath, map.levels[levelIndex]);
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="icon.ico">
+    <title>Goofy Mania</title>
+    <link rel="stylesheet" href="./main.css">
+    <script src="./main.js"></script>
+    <script src="./Game.js"></script>
+</head>
 
-                const user = {
-                    settings: {
-                        scrollSpeed: 40,
-                        // scrollSpeed: 20,
-                        masterVolume: 15,
-                        musicVolume: 100,
-                        // musicVolume: 10,
-                        sfxVolume: 25,
-                        
-                        keybinds: {
-                            "4-keys": "dfjk".split(""),
-                            "7-keys": "sdf jkl".split("")
-                        }
-                    },
-                    modifiers: {
-                        // auto: false // TODO
-                        auto: true, // TODO
-                        speed: 2,
-                        // pitch: true
-                    },
-                    skin
-                }
+<body>
+    <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001
+        ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
+    <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;"
+        onclick="start()"></button>
+    <!-- <div id="game" style="max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div> -->
+    <div id="game"></div>
+    <script>
+        game = null;
 
-                game = new Game(gameElement, map, level, user);
-                game.init();
+        (async () => {
+            const gameElement = document.getElementById("game");
 
-                document.getElementById("button").innerHTML = "CLICK ME TO START"
+            document.getElementById("button").innerHTML = "LOADING SKIN";
+            const skin = await getSkinData("skins/default");
+            loadDefaultSkin(skin);
 
-            })();
-            function start() {
-                if (!game) return;
-                game.start();
-                game.onstop = () => location.reload();
-                document.getElementById("button").remove();
+            let mapPath;
+            let levelIndex;
+
+            // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
+            // levelIndex = 2;
+            // mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
+            // levelIndex = 0;
+            // mapPath = `maps\\Quaver - coltrane - this train going nowhere - 186409`;
+            // levelIndex = 0;
+            // mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
+            // levelIndex = 9;
+            mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
+            levelIndex = 0;
+            // mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
+            // levelIndex = 0;
+            // mapPath = `maps\\Quaver - Dreamworks - Shrek Movie - 57335`;
+            // levelIndex = 0;
+
+            document.getElementById("button").innerHTML = "GETTING MAP DATA";
+            map = await getMapData(mapPath);
+            document.getElementById("button").innerHTML = "GETTING LEVEL DATA";
+            level = await getLevelData(mapPath, map.levels[levelIndex]);
+
+            const user = {
+                settings: {
+                    scrollSpeed: 40,
+                    // scrollSpeed: 20,
+                    masterVolume: 15,
+                    musicVolume: 100,
+                    // musicVolume: 10,
+                    sfxVolume: 25,
+
+                    keybinds: {
+                        "4-keys": "dfjk".split(""),
+                        "7-keys": "sdf jkl".split("")
+                    }
+                },
+                modifiers: {
+                    // auto: false // TODO
+                    auto: true, // TODO
+                    speed: 2,
+                    // pitch: true
+                },
+                skin
             }
-        </script>
-    </body>
+
+            game = new Game(gameElement, map, level, user);
+            game.init();
+
+            document.getElementById("button").innerHTML = "CLICK ME TO START"
+
+        })();
+        function start() {
+            if (!game) return;
+            game.start();
+            game.onStop = () => location.reload();
+            document.getElementById("button").remove();
+        }
+
+        async function changeMapTest(mapName, levelIndex) {
+            const map = await getMapData(`maps\\${mapName}`)
+            const level = await getLevelData(`maps\\${mapName}`, map.levels[0])
+            
+            game.onStop = null;
+            game.onGameLoopStop = () => {
+                game.map = map;
+                game.level = level;
+                game.init();
+                game.start();
+                
+            };
+            game.stop();
+        }
+    </script>
+</body>
+
 </html>

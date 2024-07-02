@@ -8,7 +8,7 @@ class Game {
     }
 
     init() {
-        if (this.hasInit) throw new Error("Already init!");
+        if (this.hasInit) throw new Error("Already initialized!");
 
         // Set variables
         this.notesReady = null;
@@ -16,17 +16,17 @@ class Game {
         this.running = null;
         this.notesToSpawn = [...this.level.data];
         this.runningTime = 0;
-        this.lanes = [ ];
-        this.timeouts = [ ];
-        this.urls = { },
-        this.elements = { };
+        this.lanes = [];
+        this.timeouts = [];
+        this.urls = {};
+        this.elements = {};
         this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesRemoved = 0; // Total amount of notes removed/despawned
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = ((this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
-        
+
         this.health = 100;
         this.score = 0;
         this.multiplier = 1;
@@ -71,17 +71,17 @@ class Game {
         for (let i = 0; i < this.level.keys; i++) {
             const laneElement = document.createElement("div");
             laneElement.classList.add("lane");
-            
+
             const notesElement = document.createElement("div");
             notesElement.classList.add("notes");
             laneElement.appendChild(notesElement);
-            
+
             const keyElement = document.createElement("div");
             keyElement.classList.add("key");
             laneElement.appendChild(keyElement);
-            
+
             this.elements.lanes.appendChild(laneElement);
-            
+
             this.lanes.push({ elements: { lane: laneElement, notes: notesElement, key: keyElement }, notesSpawned: 0, keyPressed: false, notes: [] });
         }
 
@@ -99,11 +99,11 @@ class Game {
         this.elements.combo = document.createElement("div");
         this.elements.combo.classList.add("combo");
         this.elements.combo.innerHTML = `${this.combo}`;
-        
+
         // Create score
         this.elements.score = document.createElement("div");
         this.elements.score.classList.add("score");
-        
+
         // Create health
         this.elements.health = document.createElement("div");
         this.elements.health.classList.add("health");
@@ -122,7 +122,7 @@ class Game {
 
         // Set background
         if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
-        
+
         // Append to game
         this.game.appendChild(this.elements.lanes);
         this.game.appendChild(this.elements.background);
@@ -139,22 +139,24 @@ class Game {
         this.hasInit = true;
     }
 
-    async start() {   
+    async start() {
+        if (!this.init) throw new Error("Not initialized!");
         if (this.running) throw new Error("Already started!");
-        
+
         // Game loop
-        this.gameLoop(async (deltaTime, loop, fps) => {
+        this.gameLoop((deltaTime, loop, fps) => {
             this.runningTime += deltaTime;
 
             for (const i in this.timeouts) {
+                if (!this.timeouts[i]) continue;
                 const [callback, ms, time] = this.timeouts[i];
                 if (this.runningTime >= time + ms) {
-                    await callback();
-                    delete this.timeouts[i];
+                    callback();
+                    this.timeouts[i] = null;
                     // this.timeouts.splice(i, 1);
                 }
             }
-
+            
             if (this.running == null) {
                 // First run
                 document.onvisibilitychange = () => {
@@ -162,7 +164,7 @@ class Game {
                 }
 
                 this.gameTimeout(() => this.notesReady = true, this.map.offset);
-                this.gameTimeout(async () => {
+                this.gameTimeout(() => {
                     this.music = this.playAudio(this.urls["music"], {
                         volume: this.user.settings.musicVolume,
                         playbackRate: this.user.modifiers.speed, // Modifier: Speed
@@ -210,36 +212,43 @@ class Game {
             if (this.gameSettings.logFps) console.log(`FPS: ${fps}`);
             if (this.gameSettings.logDeltaTime) console.log(`Delta Time: ${deltaTime}`);
 
-            if (this.running) loop();
+            if (this.running) loop(); else this.onGameLoopStop?.();
         });
     }
 
     stop() {
-        // Revoke URL's
-        Object.entries(this.urls).forEach(([key, value]) => {
-            URL.revokeObjectURL(value);
-        });
+        this.stopping = true;
+        
+        if (this.hasInit) {
+            // Revoke URL's
+            Object.entries(this.urls).forEach(([key, value]) => {
+                URL.revokeObjectURL(value);
+            });
+            
+            // Remove events
+            removeEventListener("keyup", this.onKeyUp);
+            removeEventListener("keydown", this.onKeyDown);
+            
+            // Remove all elements
+            Object.entries(this.elements).forEach(([key, value]) => {
+                value.remove();
+            });   
 
-        // Remove events
-        removeEventListener("keyup", this.onKeyUp);
-        removeEventListener("keydown", this.onKeyDown);
-
-        // Stop game loop
-        this.running = false;
-
-        // TODO: better way?
-        this.music.pause();
-        this.music.currentTime = 0;
-        this.music.src = "";
-        this.music.remove();
-
-        // Remove all elements
-        Object.entries(this.elements).forEach(([key, value]) => {
-            value.remove();
-        });
-
+            this.hasInit = false;
+        }
+        
+        if (this.running) {
+            this.music.pause();
+            this.music.currentTime = 0;
+            this.music.src = "";
+            this.music.remove();
+            
+            // Stop game loop
+            this.running = false;
+        }
+        
         // Call event
-        this.onstop?.();
+        this.onStop?.();
     }
 
     pause() {
@@ -314,14 +323,14 @@ class Game {
         setTimeout(() => {
             const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
             this.elements.hitScore.style.display = "";
-            Object.entries(hitScore.styles || { }).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
+            Object.entries(hitScore.styles || {}).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
 
             if (hitScore.type == "text") {
                 this.elements.hitScore.innerHTML = hitScore.text;
             } else if (hitScore.type == "image") {
                 this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
             }
-            
+
             this.test = this.gameTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter);
         });
     }
@@ -331,7 +340,7 @@ class Game {
         this.playAudio(this.urls[sfx], { volume: this.user.settings.sfxVolume });
     }
 
-    playAudio(url, options = { }) {
+    playAudio(url, options = {}) {
         if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
         const audio = new Audio(url);
         this.audiosPlaying++;
@@ -431,5 +440,6 @@ class Game {
     }
 
     // Game events
-    onstop() { }
+    onStop() { }
+    onGameLoopStop() { }
 }
