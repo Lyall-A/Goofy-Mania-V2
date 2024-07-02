@@ -83,7 +83,7 @@
         function start() {
             if (!game) return;
             game.start();
-            game.onStop = () => location.reload();
+            game.once("onStopping", () => location.reload())
             document.getElementById("button").remove();
         }
 
@@ -91,14 +91,13 @@
             const map = await getMapData(`maps\\${mapName}`)
             const level = await getLevelData(`maps\\${mapName}`, map.levels[0])
             
-            game.onStop = null;
-            game.onGameLoopStop = () => {
+            game.onStopping = null;
+            game.once("onGameLoopStop", () => {
                 game.map = map;
                 game.level = level;
                 game.init();
                 game.start();
-                
-            };
+            });
             game.stop();
         }
     </script>

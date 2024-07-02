@@ -159,9 +159,7 @@ class Game {
             
             if (this.running == null) {
                 // First run
-                document.onvisibilitychange = () => {
-                    if (document.hidden) this.pause();
-                }
+                document.addEventListener("visibilitychange", this.onVisibilityChange);
 
                 this.gameTimeout(() => this.notesReady = true, this.map.offset);
                 this.gameTimeout(() => {
@@ -217,8 +215,6 @@ class Game {
     }
 
     stop() {
-        this.stopping = true;
-        
         if (this.hasInit) {
             // Revoke URL's
             Object.entries(this.urls).forEach(([key, value]) => {
@@ -228,6 +224,7 @@ class Game {
             // Remove events
             removeEventListener("keyup", this.onKeyUp);
             removeEventListener("keydown", this.onKeyDown);
+            document.removeEventListener("visibilitychange", this.onVisibilityChange);
             
             // Remove all elements
             Object.entries(this.elements).forEach(([key, value]) => {
@@ -248,7 +245,7 @@ class Game {
         }
         
         // Call event
-        this.onStop?.();
+        this.onStopping?.();
     }
 
     pause() {
@@ -439,7 +436,23 @@ class Game {
         }
     }
 
+    onVisibilityChange = (ev) => document.hidden ? this.pause() : null;
+
     // Game events
-    onStop() { }
+    on(name, callback) {
+        const func = this[name];
+        this[name] = () => { func?.(); callback(); }; 
+    }
+
+    once(name, callback) {
+        const func = this[name];
+        this[name] = () => { func?.(); callback(); this[name] = func; }
+    }
+
+    removeAllEventCallbacks(name) {
+        this[name] = null;
+    }
+
+    onStopping() { }
     onGameLoopStop() { }
 }
