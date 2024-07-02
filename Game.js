@@ -155,8 +155,9 @@ class Game {
 
             // Run timeouts
             for (const i in this.timeouts) {
-                if (!this.timeouts[i]) continue;
-                const [callback, ms, time] = this.timeouts[i];
+                const timeout = this.timeouts[i];
+                if (!timeout) continue;
+                const { callback, ms, time } = timeout;
                 if (this.runningTime >= time + ms) {
                     callback();
                     this.timeouts[i] = null;
@@ -165,11 +166,12 @@ class Game {
             
             // Run intervals
             for (const i in this.intervals) {
-                if (!this.intervals[i]) continue;
-                const [callback, ms, time] = this.intervals[i];
+                const interval = this.intervals[i];
+                if (!interval) continue;
+                const { callback, ms, time } = interval;
                 if (this.runningTime >= time + ms) {
                     callback();
-                    this.intervals[i][2] = time + ms;
+                    this.intervals[i].time = time + ms;
                 }
             }
             
@@ -344,8 +346,8 @@ class Game {
     setHitScore(points) {
         this.elements.hitScore.removeAttribute("style");
         this.elements.hitScore.style.display = "none";
-        this.test?.();
-        setTimeout(() => {
+        this.removeGameTimeout("hitScoreHide");
+        this.gameTimeout(() => {
             const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
             this.elements.hitScore.style.display = "";
             Object.entries(hitScore.styles || {}).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
@@ -355,8 +357,7 @@ class Game {
             } else if (hitScore.type == "image") {
                 this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
             }
-
-            this.test = this.gameTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter);
+            this.gameTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter, "hitScoreHide");
         });
     }
 
@@ -374,7 +375,7 @@ class Game {
         if (options.changePitch) audio.preservesPitch = false;
         audio.onpause = e => audio.ended ? null : audio.play();
         audio.onended = () => this.audiosPlaying--;
-        audio.oncanplay = () => audio.play();
+        audio.onloadedmetadata = () => audio.play();
         return audio;
     }
 
@@ -444,14 +445,28 @@ class Game {
         requestAnimationFrame(loop);
     }
 
-    gameTimeout(callback, ms = 0) {
-        const index = this.timeouts.push([callback, ms, this.runningTime || 0]) - 1;
+    gameTimeout(callback, ms = 0, name) {
+        const index = this.timeouts.push({ callback, ms, time: this.runningTime || 0, name }) - 1;
         return () => this.timeouts[index] = null;
     }
 
-    gameInterval(callback, ms = 0) {
-        const index = this.intervals.push([callback, ms, this.runningTime || 0]) - 1;
+    gameInterval(callback, ms = 0, name) {
+        const index = this.intervals.push({ callback, ms, time: this.runningTime || 0, name }) - 1;
         return () => this.intervals[index] = null
+    }
+
+    removeGameTimeout(name) {
+        const foundIndex = this.timeouts.findIndex(i => i?.name == name);
+        if (foundIndex == -1) return false;
+        this.timeouts[foundIndex] = null;
+        return true;
+    }
+
+    removeGameInterval(name) {
+        const foundIndex = this.intervals.findIndex(i => i?.name == name);
+        if (foundIndex == -1) return false;
+        this.intervals[foundIndex] = null;
+        return true;
     }
 
     // Events
@@ -481,7 +496,7 @@ class Game {
 
     once(name, callback) {
         const func = this[name];
-        this[name] = () => { func?.(...args); callback(...args); this[name] = func; }
+        this[name] = (...args) => { func?.(...args); callback(...args); this[name] = func; }
     }
 
     removeAllEventCallbacks(name) {
