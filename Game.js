@@ -5,16 +5,20 @@ class Game {
         this.level = level;
         this.user = user;
         this.gameSettings = gameSettings;
+    }
 
+    init() {
+        if (this.hasInit) throw new Error("Already init!");
+
+        // Set variables
         this.notesReady = null;
         this.startTime = null;
         this.running = null;
-        this.notesToSpawn = this.level.data;
+        this.notesToSpawn = [...this.level.data];
         this.runningTime = 0;
-        this.lanes = [];
+        this.lanes = [ ];
+        this.timeouts = [ ];
         this.urls = { },
-        this.timeouts = { };
-        this.intervals = { };
         this.elements = { };
         this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
@@ -52,259 +56,7 @@ class Game {
                 { distance: 400 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
             ]
         }
-    }
 
-    async start() {
-        // setInterval(() => {
-        //     console.clear();
-        //     console.log("Health:", this.health);
-        //     console.log("Score:", this.score);
-        //     // console.log("Multiplier:", this.multiplier);
-        //     console.log("Combo:", this.combo);
-        //     console.log("Max Combo:", this.maxCombo);
-        //     console.log("Bad hits:", this.badHits);
-        //     console.log("Misses:", this.misses);
-        //     console.log("Accuracy:", this.accuracy);
-        // }, 1000);
-        
-        // Game loop
-        this.gameLoop(async (deltaTime, loop, fps) => {
-            this.runningTime += deltaTime;
-
-            if (this.running == null) {
-                // First run
-                document.onvisibilitychange = () => {
-                    if (document.hidden) this.pause();
-                }
-
-                setTimeout(() => this.notesReady = true, this.map.offset);
-                setTimeout(async () => {
-                    this.music = this.playAudio(this.urls["music"], { volume: this.user.settings.musicVolume });
-                    this.music.onended = () => this.stop();
-                }, this.getMsToKey());
-
-                this.startTime = Date.now();
-                this.running = true;
-            }
-
-            // Spawn notes
-            if (this.notesReady) {
-                for (const i in { ...this.notesToSpawn }) { // the fuck?
-                    const noteToSpawn = this.notesToSpawn[0];
-                    if (this.beatToMs(noteToSpawn[2]) + this.map.offset >= this.runningTime) break; // TODO: is this right?
-                    this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
-                    this.notesToSpawn.shift();
-
-                    // broken hax TEMP
-                    if (this.user.modifiers.auto) setTimeout(() => {
-                        this.onKeyPress(noteToSpawn[0] - 1);
-                        setTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 50);
-                    }, this.getMsToKey());
-                }
-            }
-
-            // Move notes down/despawn when off screen
-            this.lanes.forEach((lane, laneIndex) => {
-                lane.notes.forEach(note => {
-                    note.top += this.noteMoveAmount * deltaTime;
-                    note.element.style.top = `${note.top}px`;
-                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
-                        if (!lane.elements.notes.contains(note.element)) return;
-                        // Missed note
-                        if (this.combo) this.playSfx("combo-break");
-                        this.misses++;
-                        this.updateCombo(0);
-                        this.removeNote(laneIndex, note);
-                    }
-                });
-            });
-
-            if (this.gameSettings.logFps) console.log(`FPS: ${fps}`);
-            if (this.gameSettings.logDeltaTime) console.log(`Delta Time: ${deltaTime}`);
-
-            if (this.running) loop();
-        });
-    }
-
-    createUrl(key, data) {
-        try {
-            this.urls[key] = URL.createObjectURL(data);;
-            return this.urls[key];
-        } catch (err) {
-            return false;
-        }
-    }
-
-    msToBeat(ms, bpm = this.map.bpm) {
-        return parseFloat(ms.toFixed(10)) / (60 * 1000 / bpm);
-    }
-
-    beatToMs(beat, bpm = this.map.bpm) {
-        return parseFloat(((beat / bpm) * 60 * 1000).toFixed(10));
-    }
-
-    getMsToKey(laneNum = 1) {
-        const laneIndex = laneNum - 1;
-        const lane = this.lanes[laneIndex];
-        return (lane.elements.key.offsetTop + lane.elements.key.offsetHeight) / this.noteMoveAmount;
-    }
-
-    async sleep(ms) {
-        return new Promise(resolve => setTimeout(() => resolve(), ms));
-    }
-
-    spawnNote(laneNum, sliderHeight = 0) {
-        const laneIndex = laneNum - 1;
-        const lane = this.lanes[laneIndex];
-        let top = 0;
-        const noteElement = document.createElement("div");
-        noteElement.classList.add("note");
-        noteElement.classList.add(`note-${this.lanes.length}-${laneNum}`);
-        noteElement.style.top = `${top}px`;
-        lane.elements.notes.appendChild(noteElement);
-        lane.notesSpawned++;
-        lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
-        noteElement.style.height = sliderHeight ? `${noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount)}px` : "auto";
-    }
-
-    removeNote(laneIndex, note) {
-        const lane = this.lanes[laneIndex];
-        lane.notes.splice(lane.notes.findIndex(i => i.id == note.id), 1);
-        this.notesRemoved++;
-        this.updateAccuracy();
-        note.element.remove();
-    }
-
-    updateAccuracy() {
-        this.accuracy = this.calculateAccuracy();
-        this.elements.accuracy.innerHTML = `${this.accuracy.toFixed(2)}%`;
-    }
-
-    updateCombo(newCombo) {
-        this.combo = newCombo != undefined ? newCombo : this.combo + 1;
-        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-        this.elements.combo.innerHTML = `${this.combo}`;
-    }
-
-    playSfx(sfx) {
-        if (!this.urls[sfx]) return;
-        this.playAudio(this.urls[sfx], { volume: this.user.settings.sfxVolume });
-    }
-
-    playAudio(url, options = { }) {
-        if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
-        const audio = new Audio(url);
-        this.audiosPlaying++;
-        audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
-        if (options.playbackRate) audio.playbackRate = options.playbackRate;
-        audio.onpause = e => audio.ended ? null : audio.play();
-        audio.onended = () => this.audiosPlaying--;
-        audio.oncanplay = () => audio.play();
-        return audio;
-    }
-
-    onKeyPress(laneIndex) {
-        this.lanes[laneIndex].elements.key.classList.add("pressed")
-
-        this.playSfx("hit");
-        if (this.lanes[laneIndex].notes[0]) this.hitNote(laneIndex);
-    }
-
-    onKeyRelease(laneIndex) {
-        this.lanes[laneIndex].elements.key.classList.remove("pressed");
-    }
-
-    pause() {
-        this.stop(); // TODO
-    }
-
-    stop() {
-        // Revoke URL's
-        Object.entries(this.urls).forEach(([key, value]) => {
-            URL.revokeObjectURL(value);
-        });
-
-        // Remove events
-        removeEventListener("keyup", this.onKeyUp);
-        removeEventListener("keydown", this.onKeyDown);
-
-        // Stop game loop
-        this.running = false;
-
-        // TODO: better way?
-        this.music.pause();
-        this.music.remove();
-
-        // Remove all elements
-        Object.entries(this.elements).forEach(([key, value]) => {
-            value.remove();
-        });
-
-        // Call event
-        this.onstop?.();
-    }
-
-    calculateAccuracy() {
-        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * this.notesRemoved)) * 100;
-    }
-
-    hitNote(laneIndex) {
-        // const closestNote = this.lanes[laneIndex].notes[0].noteElement;
-        const lane = this.lanes[laneIndex];
-        const keyTop = lane.elements.key.offsetTop;
-        const closestNote = lane.notes.reduce((prev, curr) => {
-            const currTop = curr.top - curr.height;
-            const prevTop = prev.top - prev.height;
-            const currDistance = Math.max(currTop - keyTop, keyTop - currTop);
-            const prevDistance = Math.max(prevTop - keyTop, keyTop - prevTop);
-            return currDistance < prevDistance ? curr : prev;
-        });
-
-        const closestNoteTop = closestNote.top - closestNote.height;
-        const distance = Math.max(closestNoteTop - keyTop, keyTop - closestNoteTop);
-
-        if (distance > Math.max(...this.gameSettings.points.map(i => i.distance))) return; // Ignore if closest note is still too far
-        const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => {
-            return Math.abs(curr.distance - distance) < Math.abs(prev.distance - distance) ? curr : prev;
-        });
-
-        // TODO: SLIDERSSSS IT NEEDS TO BE HELD DOWN HOW TF AM I GONNA DOT AHT
-
-        if (pointsToAdd.isBadHit) {
-            this.playSfx("bad-hit");
-            this.updateCombo(0);
-            this.badHits++;
-        } else {
-            this.updateCombo();
-        }
-
-        this.setHitScore(pointsToAdd.points);
-        this.scoreNoMultiplier += pointsToAdd.points;
-        this.score += pointsToAdd.points * this.multiplier;
-        this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
-        this.removeNote(laneIndex, closestNote);
-    }
-
-    setHitScore(points) {
-        this.elements.hitScore.removeAttribute("style");
-        this.elements.hitScore.style.display = "none";
-        clearTimeout(this.timeouts.hitScoreHide);
-        setTimeout(() => {
-            const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
-            this.elements.hitScore.style.display = "";
-            Object.entries(hitScore.styles || { }).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
-
-            if (hitScore.type == "text") {
-                this.elements.hitScore.innerHTML = hitScore.text;
-            } else if (hitScore.type == "image") {
-                this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
-            }
-            
-            this.timeouts.hitScoreHide = setTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter);
-        });
-    }
-
-    init() {
         // Create game
         this.elements.game = document.createElement("div");
         this.elements.game.classList.add("game");
@@ -362,6 +114,7 @@ class Game {
         this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
         this.createUrl("bad-hit", this.user.skin.sfx["bad-hit"].data);
         this.createUrl("music", this.map.audio.data);
+        // Object.entries(this.user.skin.sfx).filter(i => i[1].data).forEach(([key, value]) => this.createUrl(key, value.data));
         // Assets
         this.createUrl("background", this.map.background.data);
         if (this.defaultHitScore.data) this.createUrl("default-hit-score", this.defaultHitScore.data);
@@ -380,8 +133,263 @@ class Game {
         this.game.appendChild(this.elements.health);
 
         // Create events
-        addEventListener("keydown", this.onKeyDown);
-        addEventListener("keyup", this.onKeyUp);
+        if (!this.user.modifiers.auto) addEventListener("keydown", this.onKeyDown);
+        if (!this.user.modifiers.auto) addEventListener("keyup", this.onKeyUp);
+
+        this.hasInit = true;
+    }
+
+    async start() {   
+        if (this.running) throw new Error("Already started!");
+        
+        // Game loop
+        this.gameLoop(async (deltaTime, loop, fps) => {
+            this.runningTime += deltaTime;
+
+            for (const i in this.timeouts) {
+                const [callback, ms, time] = this.timeouts[i];
+                if (this.runningTime >= time + ms) {
+                    await callback();
+                    delete this.timeouts[i];
+                    // this.timeouts.splice(i, 1);
+                }
+            }
+
+            if (this.running == null) {
+                // First run
+                document.onvisibilitychange = () => {
+                    if (document.hidden) this.pause();
+                }
+
+                this.gameTimeout(() => this.notesReady = true, this.map.offset);
+                this.gameTimeout(async () => {
+                    this.music = this.playAudio(this.urls["music"], {
+                        volume: this.user.settings.musicVolume,
+                        playbackRate: this.user.modifiers.speed, // Modifier: Speed
+                        changePitch: this.user.modifiers.pitch // Modifier: Pitch
+                    });
+                    this.music.onended = () => this.stop();
+                }, this.getMsToKey());
+
+                this.startTime = Date.now();
+                this.running = true;
+            }
+
+            // Spawn notes
+            if (this.notesReady) {
+                for (const i in { ...this.notesToSpawn }) { // the fuck?
+                    const noteToSpawn = this.notesToSpawn[0];
+                    if (this.beatToMs(noteToSpawn[2] / this.user.modifiers.speed) + this.map.offset >= this.runningTime) break; // TODO: is this right?
+                    this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
+                    this.notesToSpawn.shift();
+
+                    // Modifier: Auto
+                    if (this.user.modifiers.auto) this.gameTimeout(() => {
+                        this.onKeyPress(noteToSpawn[0] - 1);
+                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 100);
+                    }, this.getMsToKey(noteToSpawn[0]));
+                }
+            }
+
+            // Move notes down/despawn when off screen
+            this.lanes.forEach((lane, laneIndex) => {
+                lane.notes.forEach(note => {
+                    note.top += this.noteMoveAmount * deltaTime;
+                    note.element.style.top = `${note.top}px`;
+                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
+                        if (!lane.elements.notes.contains(note.element)) return;
+                        // Missed note
+                        if (this.combo) this.playSfx("combo-break");
+                        this.misses++;
+                        this.updateCombo(0);
+                        this.removeNote(laneIndex, note);
+                    }
+                });
+            });
+
+            if (this.gameSettings.logFps) console.log(`FPS: ${fps}`);
+            if (this.gameSettings.logDeltaTime) console.log(`Delta Time: ${deltaTime}`);
+
+            if (this.running) loop();
+        });
+    }
+
+    stop() {
+        // Revoke URL's
+        Object.entries(this.urls).forEach(([key, value]) => {
+            URL.revokeObjectURL(value);
+        });
+
+        // Remove events
+        removeEventListener("keyup", this.onKeyUp);
+        removeEventListener("keydown", this.onKeyDown);
+
+        // Stop game loop
+        this.running = false;
+
+        // TODO: better way?
+        this.music.pause();
+        this.music.currentTime = 0;
+        this.music.src = "";
+        this.music.remove();
+
+        // Remove all elements
+        Object.entries(this.elements).forEach(([key, value]) => {
+            value.remove();
+        });
+
+        // Call event
+        this.onstop?.();
+    }
+
+    pause() {
+        // TODO
+        this.stop();
+    }
+
+    spawnNote(laneNum, sliderHeight = 0) {
+        const laneIndex = laneNum - 1;
+        const lane = this.lanes[laneIndex];
+        let top = 0;
+        const noteElement = document.createElement("div");
+        noteElement.classList.add("note");
+        noteElement.classList.add(`note-${this.lanes.length}-${laneNum}`);
+        noteElement.style.top = `${top}px`;
+        lane.elements.notes.appendChild(noteElement);
+        lane.notesSpawned++;
+        lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
+        noteElement.style.height = sliderHeight ? `${noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount)}px` : "auto";
+    }
+
+    removeNote(laneIndex, note) {
+        const lane = this.lanes[laneIndex];
+        lane.notes.splice(lane.notes.findIndex(i => i.id == note.id), 1);
+        this.notesRemoved++;
+        this.updateAccuracy();
+        note.element.remove();
+    }
+
+    createUrl(key, data) {
+        try {
+            this.urls[key] = URL.createObjectURL(data);;
+            return this.urls[key];
+        } catch (err) {
+            return false;
+        }
+    }
+
+    msToBeat(ms, bpm = this.map.bpm) {
+        return parseFloat(ms.toFixed(10)) / (60 * 1000 / bpm);
+    }
+
+    beatToMs(beat, bpm = this.map.bpm) {
+        return parseFloat(((beat / bpm) * 60 * 1000).toFixed(10));
+    }
+
+    getMsToKey(laneNum = 1) {
+        const laneIndex = laneNum - 1;
+        const lane = this.lanes[laneIndex];
+        return (lane.elements.key.offsetTop + lane.elements.key.offsetHeight) / this.noteMoveAmount;
+    }
+
+    calculateAccuracy() {
+        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * this.notesRemoved)) * 100;
+    }
+
+    updateAccuracy() {
+        this.accuracy = this.calculateAccuracy();
+        this.elements.accuracy.innerHTML = `${this.accuracy.toFixed(2)}%`;
+    }
+
+    updateCombo(newCombo) {
+        this.combo = newCombo != undefined ? newCombo : this.combo + 1;
+        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        this.elements.combo.innerHTML = `${this.combo}`;
+    }
+
+    setHitScore(points) {
+        this.elements.hitScore.removeAttribute("style");
+        this.elements.hitScore.style.display = "none";
+        this.test?.();
+        setTimeout(() => {
+            const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
+            this.elements.hitScore.style.display = "";
+            Object.entries(hitScore.styles || { }).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
+
+            if (hitScore.type == "text") {
+                this.elements.hitScore.innerHTML = hitScore.text;
+            } else if (hitScore.type == "image") {
+                this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
+            }
+            
+            this.test = this.gameTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter);
+        });
+    }
+
+    playSfx(sfx) {
+        if (!this.urls[sfx]) return;
+        this.playAudio(this.urls[sfx], { volume: this.user.settings.sfxVolume });
+    }
+
+    playAudio(url, options = { }) {
+        if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
+        const audio = new Audio(url);
+        this.audiosPlaying++;
+        audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
+        if (options.playbackRate) audio.playbackRate = options.playbackRate;
+        if (options.changePitch) audio.preservesPitch = false;
+        audio.onpause = e => audio.ended ? null : audio.play();
+        audio.onended = () => this.audiosPlaying--;
+        audio.oncanplay = () => audio.play();
+        return audio;
+    }
+
+    onKeyPress(laneIndex) {
+        this.lanes[laneIndex].elements.key.classList.add("pressed")
+
+        this.playSfx("hit");
+        if (this.lanes[laneIndex].notes[0]) this.hitNote(laneIndex);
+    }
+
+    onKeyRelease(laneIndex) {
+        this.lanes[laneIndex].elements.key.classList.remove("pressed");
+    }
+
+    hitNote(laneIndex) {
+        // const closestNote = this.lanes[laneIndex].notes[0].noteElement;
+        const lane = this.lanes[laneIndex];
+        const keyTop = lane.elements.key.offsetTop;
+        const closestNote = lane.notes.reduce((prev, curr) => {
+            const currTop = curr.top - curr.height;
+            const prevTop = prev.top - prev.height;
+            const currDistance = Math.max(currTop - keyTop, keyTop - currTop);
+            const prevDistance = Math.max(prevTop - keyTop, keyTop - prevTop);
+            return currDistance < prevDistance ? curr : prev;
+        });
+
+        const closestNoteTop = closestNote.top - closestNote.height;
+        const distance = Math.max(closestNoteTop - keyTop, keyTop - closestNoteTop);
+
+        if (distance > Math.max(...this.gameSettings.points.map(i => i.distance))) return; // Ignore if closest note is still too far
+        const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => {
+            return Math.abs(curr.distance - distance) < Math.abs(prev.distance - distance) ? curr : prev;
+        });
+
+        // TODO: SLIDERSSSS IT NEEDS TO BE HELD DOWN HOW TF AM I GONNA DOT AHT
+
+        if (pointsToAdd.isBadHit) {
+            this.playSfx("bad-hit");
+            this.updateCombo(0);
+            this.badHits++;
+        } else {
+            this.updateCombo();
+        }
+
+        this.setHitScore(pointsToAdd.points);
+        this.scoreNoMultiplier += pointsToAdd.points;
+        this.score += pointsToAdd.points * this.multiplier;
+        this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
+        this.removeNote(laneIndex, closestNote);
     }
 
     gameLoop(callback) {
@@ -398,6 +406,11 @@ class Game {
         }
 
         requestAnimationFrame(loop);
+    }
+
+    gameTimeout(callback, ms = 0) {
+        const index = this.timeouts.push([callback, ms, this.runningTime]) - 1;
+        return () => delete this.timeouts[index];
     }
 
     // Events

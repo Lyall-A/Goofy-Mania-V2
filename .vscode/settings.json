@@ -2,6 +2,7 @@
     "files.associations": {
         "*.gmm": "json", // Goofy Mania Map file
         "*.gml": "json", // Goofy Mania Level file
-        "*.gms": "json" // Goofy Mania Skin file
+        "*.gms": "json", // Goofy Mania Skin file
+        "*.gmr": "json", // Goofy Mania Repo file
     }
 }

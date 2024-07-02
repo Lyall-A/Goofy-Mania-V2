@@ -1,10 +1,3 @@
 node_modules
 build
 Example Quaver Maps
-
-# temp
-discord_game_sdk
-discord_game_sdk_addon
-binding.gyp
-electron.js
-discordGameSDK.js

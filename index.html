@@ -12,7 +12,8 @@
     <body>
         <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
         <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;" onclick="start()">CLICK ME</button>
-        <div id="game" style="max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div>
+        <!-- <div id="game" style="max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div> -->
+        <div id="game"></div>
         <script>
             game = null;
             
@@ -22,21 +23,26 @@
                 const skin = await getSkinData("skins/default");
                 loadDefaultSkin(skin);
 
-                const mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
-                const levelIndex = 2;
-                // const mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
-                // const levelIndex = 0;
-                // const mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
-                // const levelIndex = 9;
-                // const mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
-                // const levelIndex = 0;
-                // const mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
-                // const levelIndex = 0;
-                // const mapPath = `maps\\Quaver - Dreamworks - Shrek Movie - 57335`;
-                // const levelIndex = 0;
+                let mapPath;
+                let levelIndex;
 
-                const map = await getMapData(mapPath);
-                const level = await getLevelData(mapPath, map.levels[levelIndex]);
+                // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
+                // levelIndex = 2;
+                // mapPath = `maps\\Quaver - Kobaryo - Cartoon Candy - 211237`;
+                // levelIndex = 0;
+                // mapPath = `maps\\Quaver - coltrane - this train going nowhere - 186409`;
+                // levelIndex = 0;
+                // mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
+                // levelIndex = 9;
+                mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
+                levelIndex = 0;
+                // mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
+                // levelIndex = 0;
+                // mapPath = `maps\\Quaver - Dreamworks - Shrek Movie - 57335`;
+                // levelIndex = 0;
+
+                map = await getMapData(mapPath);
+                level = await getLevelData(mapPath, map.levels[levelIndex]);
 
                 const user = {
                     settings: {
@@ -54,7 +60,9 @@
                     },
                     modifiers: {
                         // auto: false // TODO
-                        // auto: true // TODO
+                        auto: true, // TODO
+                        speed: 2,
+                        // pitch: true
                     },
                     skin
                 }
