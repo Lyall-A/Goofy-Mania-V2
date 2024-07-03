@@ -11,6 +11,26 @@ class Game {
         if (this.hasInit) throw new Error("Already initialized!");
 
         // Set variables
+        if (!this.gameSettings) this.gameSettings = {
+            // TODO: simplify comments
+            captureFps: true, // Capture FPS
+            logFps: false, // Log FPS
+            dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
+            maxMultiplier: 4, // Max multiplier
+            maxHealth: 100, // Max health
+            defaultHealth: 50, // Default health
+            minSpeed: 0.5, // Modifier: Speed
+            maxSpeed: 2, // Modifier: Speed
+            maxScrollSpeed: 40,
+            minScrollSpeed: 5,
+            multiplierChange: 1000, // Double the multiplier every x points
+            maxAudio: 10, // Max amount of audios that can play at once
+            defaultScrollSpeed: 20,
+        };
+
+        this.scrollSpeed = (this.user.settings.scrollSpeed || this.level.scrollSpeed) ? Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, this.user.settings.scrollSpeed || this.level.scrollSpeed)) : this.gameSettings.defaultScrollSpeed;
+        this.speed = this.user.modifiers.speed ? Math.max(this.gameSettings.minSpeed, Math.min(this.gameSettings.maxSpeed, this.user.modifiers.speed)) : 1;
+
         this.notesReady = null;
         this.startTime = null;
         this.running = null;
@@ -25,32 +45,17 @@ class Game {
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesRemoved = 0; // Total amount of notes removed/despawned
         this.audiosPlaying = 0; // Current amount of audios playing
-        this.noteMoveAmount = ((this.user.settings.scrollSpeed || this.level.scrollSpeed) / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
+        this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
         this.fpsHistory = [ ];
-        
-        if (!this.gameSettings) this.gameSettings = {
-            // TODO: simplify comments
-            captureFps: true, // Capture FPS
-            logFps: false, // Log FPS
-            dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
-            maxMultiplier: 4, // Max multiplier
-            maxHealth: 100, // Max health
-            defaultHealth: 50, // Default health
-            minSpeed: 0.5, // Modifier: Speed
-            maxSpeed: 2, // Modifier: Speed
-            multiplierChange: 1000, // Double the multiplier every x points
-            maxAudio: 10, // Max amount of audios that can play at once
-            points: [
-                { distance: 40 * this.pointDistanceMultiplier, points: 300 },
-                { distance: 75 * this.pointDistanceMultiplier, points: 200 },
-                { distance: 125 * this.pointDistanceMultiplier, points: 100 },
-                { distance: 175 * this.pointDistanceMultiplier, points: 50 },
-                { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
-            ]
-        }
 
-        this.speed = this.user.modifiers.speed ? Math.max(this.gameSettings.minSpeed, Math.min(this.gameSettings.maxSpeed, this.user.modifiers.speed)) : 1;
+        this.gameSettings.points = [
+            { distance: 40 * this.pointDistanceMultiplier, points: 300 },
+            { distance: 75 * this.pointDistanceMultiplier, points: 200 },
+            { distance: 125 * this.pointDistanceMultiplier, points: 100 },
+            { distance: 175 * this.pointDistanceMultiplier, points: 50 },
+            { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
+        ]
 
         this.health = this.gameSettings.defaultHealth;
         this.score = 0;
@@ -146,7 +151,7 @@ class Game {
     }
 
     async start() {
-        if (!this.init) throw new Error("Not initialized!");
+        if (!this.hasInit) throw new Error("Not initialized!");
         if (this.running) throw new Error("Already started!");
 
         // Game loop
@@ -242,6 +247,8 @@ class Game {
 
             if (this.running) loop(); else this.call("onGameLoopStop");
         });
+
+        this.call("onStart");
     }
 
     stop() {
@@ -356,8 +363,11 @@ class Game {
                 this.elements.hitScore.innerHTML = hitScore.text;
             } else if (hitScore.type == "image") {
                 this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
-            }
-            this.gameTimeout(() => this.elements.hitScore.style.display = "none", hitScore.hideAfter, "hitScoreHide");
+            } else this.elements.hitScore.innerHTML = "";
+            this.gameTimeout(() => {
+                this.elements.hitScore.style.display = "none";
+                this.elements.hitScore.innerHTML = "";
+            }, hitScore.hideAfter, "hitScoreHide");
         });
     }
 
@@ -507,6 +517,7 @@ class Game {
         this[name]?.(...args);
     }
 
+    onStart() { }
     onStopping() { }
     onGameLoopStop() { }
     onFpsUpdate() { }

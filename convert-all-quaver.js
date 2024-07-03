@@ -3,7 +3,7 @@ const path = require("path");
 
 const quaverToGoofyMania = require("./quaverToGoofyMania");
 
-const quaverMapsPath = process.argv[2] || "./Example Quaver Maps";
+const quaverMapsPath = process.argv[2] || "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Quaver\\Data\\Exports";
 const goofyManiaMapsPath = process.argv[3] || "./maps";
 
 

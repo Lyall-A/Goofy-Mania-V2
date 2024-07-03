@@ -128,5 +128,5 @@ function parseString(string) {
 }
 
 function copyFile(file, destination) {
-    fs.copyFileSync(file, path.join(destination, path.basename(file)));
+    try { fs.copyFileSync(file, path.join(destination, path.basename(file))) } catch (err) { }
 }
