@@ -68,7 +68,7 @@
 }
 
 .note {
-    will-change: top;
+    /* will-change: top, height; */
     background-color: rgb(228, 228, 228);
     transform: translateY(-100%);
     position: absolute;
@@ -78,11 +78,11 @@
     height: auto;
 }
 
-.note-4-2, .note-4-3 { background-color: rgb(107, 122, 255) }
+.note-4-2, .note-4-3 { background-color: rgb(118, 126, 201) }
 
-.note-7-2, .note-7-6 { background-color: rgb(107, 122, 255) }
+.note-7-2, .note-7-6 { background-color: rgb(118, 126, 201) }
 /* .note-7-1, .note-7-3, .note-7-5, .note-7-7 { background-color: rgb(107, 122, 255) } */
-.note-7-4 { background-color: rgb(218, 196, 0) }
+.note-7-4 { background-color: rgb(255, 148, 210) }
 
 /* i apologise
 .note-7-1 { background-color: red; }

@@ -34,13 +34,14 @@
 
             // mapPath = `maps\\Quaver - coltrane - this train going nowhere - 186409`;
             // levelIndex = 0;
-            // mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
-            // levelIndex = 9;
+            mapPath = `maps\\Quaver - xi - Blue Zenith - 389069`;
+            levelIndex = 8;
             // mapPath = `maps\\Quaver - Drake feat. Lil Durk - Laugh Now Cry Later (Cut Ver.) - 571400`;
             // levelIndex = 0;
             // mapPath = `maps\\Quaver - dive to the heart - the music of the future - 155593`;
             // levelIndex = 3;
-            mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
+            // mapPath = `maps\\Quaver - Ludicin - Clinozoisite - 139141`;
+            // mapPath = `maps\\Quaver - Ludicin - Everlasting Eternity - 162225`;
             levelIndex = 0;
             // mapPath = `maps\\Quaver - 31444`;
             // mapPath = `maps\\Quaver - 31111`;
@@ -48,13 +49,15 @@
             // mapPath = `maps\\Quaver - 29264`;
             // mapPath = `maps\\Quaver - 28959`;
             // mapPath = `maps\\Quaver - Slax - Bimbo Limbo - 755947`;
-            // levelIndex = 0;
+            // mapPath = `maps\\Quaver - Morimori Atsushi - Funkotsu Saishin Casino - 26241`;
+            // levelIndex = 1;
             // mapPath = `maps\\Quaver - Chroma - I - 51373`;
             // levelIndex = 6;
-            // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
             // levelIndex = 2;
+            // mapPath = `maps\\Quaver - Kobaryo - Endless Adventure - 208693`;
             // mapPath = `maps\\Quaver - Laur - Animosity - 104939`;
             // levelIndex = 2;
+            // mapPath = `maps\\test`;
 
             document.getElementById("button").innerHTML = "GETTING MAP DATA";
             map = await getMapData(mapPath);
@@ -63,7 +66,7 @@
 
             const user = {
                 settings: {
-                    // scrollSpeed: 20,
+                    scrollSpeed: 20,
                     scrollSpeed: 40,
                     masterVolume: 15,
                     musicVolume: 100,
@@ -78,7 +81,7 @@
                 modifiers: {
                     auto: true,
                     speed: 1.2,
-                    pitch: true
+                    pitch: true,
                     // noSliders: true,
                 },
                 skin

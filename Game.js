@@ -1,3 +1,5 @@
+let deltaTimeMultiplier = 1;
+
 class Game {
     constructor(game, map, level, user, gameSettings) {
         this.game = game;
@@ -37,7 +39,7 @@ class Game {
         this.notesToSpawn = [...this.level.data];
         this.runningTime = 0;
         this.lanes = [];
-        this.intervals = [ ];
+        this.intervals = [];
         this.timeouts = [];
         this.urls = {};
         this.elements = {};
@@ -47,7 +49,7 @@ class Game {
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
-        this.fpsHistory = [ ];
+        this.fpsHistory = [];
 
         this.gameSettings.points = [
             { distance: 40 * this.pointDistanceMultiplier, points: 300 },
@@ -156,6 +158,7 @@ class Game {
 
         // Game loop
         this.gameLoop((deltaTime, loop, fps) => {
+            deltaTime = deltaTime * deltaTimeMultiplier;
             this.runningTime += deltaTime;
 
             // Run timeouts
@@ -168,7 +171,7 @@ class Game {
                     this.timeouts[i] = null;
                 }
             }
-            
+
             // Run intervals
             for (const i in this.intervals) {
                 const interval = this.intervals[i];
@@ -179,7 +182,7 @@ class Game {
                     this.intervals[i].time = time + ms;
                 }
             }
-            
+
             if (this.running == null) {
                 // First run
                 document.addEventListener("visibilitychange", this.onVisibilityChange);
@@ -198,7 +201,7 @@ class Game {
                     const fps = Math.round((this.fpsHistory.reduce((prev, curr) => prev + curr) / this.fpsHistory.length) || 0)
                     if (this.gameSettings.logFps) console.log("FPS:", fps);
                     this.call("onFpsUpdate", fps);
-                    this.fpsHistory = [ ];
+                    this.fpsHistory = [];
                 }, 1000);
 
                 this.startTime = Date.now();
@@ -215,7 +218,8 @@ class Game {
 
                     // Modifier: Auto
                     if (this.user.modifiers.auto) this.gameTimeout(() => {
-                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), spawnedNote.isSlider ? (spawnedNote.height / this.noteMoveAmount) : 100);
+                        this.onKeyRelease(noteToSpawn[0] - 1);
+                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), spawnedNote.isSlider ? spawnedNote.height / this.noteMoveAmount : 50, `auto-key-${noteToSpawn[0]}-release`);
                         this.onKeyPress(noteToSpawn[0] - 1);
                     }, this.getMsToKey(noteToSpawn[0]));
                 }
@@ -226,13 +230,8 @@ class Game {
                 lane.notes.forEach(note => {
                     if (note.isSlider && note.holding) {
                         // If note is slider
-                        if (note.top != lane.elements.key.offsetTop + note.normalHeight) {
-                            // Force onto key
-                            note.top = lane.elements.key.offsetTop + note.normalHeight;
-                            note.element.style.top = `${note.top}px`;
-                        }
                         if (note.height > note.normalHeight) {
-                            // Simulator move down
+                            // Simulate move down
                             note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
                             note.element.style.height = `${note.height}px`;
                         } else {
@@ -247,7 +246,7 @@ class Game {
                             // Missed note
                             if (this.combo) this.playSfx("combo-break");
                             this.misses++;
-                            this.health = Math.min(0, this.health - 1);
+                            this.health = Math.max(0, this.health - 1);
                             this.updateCombo(0);
                             this.removeNote(laneIndex, note);
                         }
@@ -274,30 +273,30 @@ class Game {
             Object.entries(this.urls).forEach(([key, value]) => {
                 URL.revokeObjectURL(value);
             });
-            
+
             // Remove events
             removeEventListener("keyup", this.onKeyUp);
             removeEventListener("keydown", this.onKeyDown);
             document.removeEventListener("visibilitychange", this.onVisibilityChange);
-            
+
             // Remove all elements
             Object.entries(this.elements).forEach(([key, value]) => {
                 value.remove();
-            });   
+            });
 
             this.hasInit = false;
         }
-        
+
         if (this.running) {
             this.music.pause();
             this.music.currentTime = 0;
             this.music.src = "";
             this.music.remove();
-            
+
             // Stop game loop
             this.running = false;
         }
-        
+
         // Call event
         this.call("onStopping");
     }
@@ -317,7 +316,7 @@ class Game {
         noteElement.style.top = `${top}px`;
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
-        const height = sliderHeight ? noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount) : noteElement.offsetHeight;
+        const height = sliderHeight ? (this.beatToMs(sliderHeight) * this.noteMoveAmount) + noteElement.offsetHeight : noteElement.offsetHeight;
         const note = { top, normalHeight: noteElement.offsetHeight, height, element: noteElement, id: lane.notesSpawned, isSlider: sliderHeight ? true : false };
         lane.notes.push(note);
         noteElement.style.height = `${height}px`;
@@ -373,7 +372,7 @@ class Game {
     setHitScore(points) {
         this.elements.hitScore.removeAttribute("style");
         this.elements.hitScore.style.display = "none";
-        this.removeGameTimeout("hitScoreHide");
+        // this.removeGameTimeout("hitScoreHide");
         this.gameTimeout(() => {
             const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
             this.elements.hitScore.style.display = "";
@@ -460,6 +459,12 @@ class Game {
         this.score += pointsToAdd.points * this.multiplier;
         this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         if (closestNote.isSlider) {
+                // Force onto key
+                closestNote.top = keyTop + closestNote.normalHeight;
+                closestNote.element.style.top = `${closestNote.top}px`;
+                // Simulate note moving down
+                closestNote.height += Math.abs(closestNoteTop - keyTop) > Math.abs(keyTop - closestNoteTop) ? closestNoteTop - keyTop : keyTop - closestNoteTop;
+                closestNote.element.style.height = `${closestNote.height}px`;
         } else this.removeNote(laneIndex, closestNote);
     }
 
@@ -494,11 +499,15 @@ class Game {
     }
 
     gameTimeout(callback, ms = 0, name) {
+        const existingTimeout = this.timeouts.findIndex(i => name && i?.name == name);
+        if (existingTimeout >= 0) this.timeouts[existingTimeout] = null;
         const index = this.timeouts.push({ callback, ms, time: this.runningTime || 0, name }) - 1;
         return () => this.timeouts[index] = null;
     }
 
     gameInterval(callback, ms = 0, name) {
+        const existingInterval = this.intervals.findIndex(i => name && i?.name == name);
+        if (existingInterval >= 0) this.intervals[existingInterval] = null;
         const index = this.intervals.push({ callback, ms, time: this.runningTime || 0, name }) - 1;
         return () => this.intervals[index] = null
     }
