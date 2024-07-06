@@ -121,9 +121,9 @@ class Game {
 
         // Create URL's (TODO)
         // SFX
-        this.createUrl("hit", this.user.skin.sfx["hit"].data);
-        this.createUrl("combo-break", this.user.skin.sfx["combo-break"].data);
-        this.createUrl("bad-hit", this.user.skin.sfx["bad-hit"].data);
+        this.createUrl("hit", this.user.skin.sfx["hit"]?.data);
+        this.createUrl("combo-break", this.user.skin.sfx["combo-break"]?.data);
+        this.createUrl("bad-hit", this.user.skin.sfx["bad-hit"]?.data);
         this.createUrl("music", this.map.audio.data);
         // Object.entries(this.user.skin.sfx).filter(i => i[1].data).forEach(([key, value]) => this.createUrl(key, value.data));
         // Assets
@@ -210,13 +210,13 @@ class Game {
                 for (const i in { ...this.notesToSpawn }) { // the fuck?
                     const noteToSpawn = this.notesToSpawn[0];
                     if (this.beatToMs(noteToSpawn[2] / this.speed) + this.map.offset >= this.runningTime) break; // TODO: is this right?
-                    this.spawnNote(noteToSpawn[0], noteToSpawn[1]);
+                    const spawnedNote = this.spawnNote(noteToSpawn[0], this.user.modifiers.noSliders ? 0 : noteToSpawn[1]); // Modifier: No Sliders
                     this.notesToSpawn.shift();
 
                     // Modifier: Auto
                     if (this.user.modifiers.auto) this.gameTimeout(() => {
+                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), spawnedNote.isSlider ? (spawnedNote.height / this.noteMoveAmount) : 100);
                         this.onKeyPress(noteToSpawn[0] - 1);
-                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), 100);
                     }, this.getMsToKey(noteToSpawn[0]));
                 }
             }
@@ -224,16 +224,33 @@ class Game {
             // Move notes down/despawn when off screen
             this.lanes.forEach((lane, laneIndex) => {
                 lane.notes.forEach(note => {
-                    note.top += this.noteMoveAmount * deltaTime;
-                    note.element.style.top = `${note.top}px`;
-                    if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
-                        if (!lane.elements.notes.contains(note.element)) return;
-                        // Missed note
-                        if (this.combo) this.playSfx("combo-break");
-                        this.misses++;
-                        this.health = Math.min(0, this.health - 1);
-                        this.updateCombo(0);
-                        this.removeNote(laneIndex, note);
+                    if (note.isSlider && note.holding) {
+                        // If note is slider
+                        if (note.top != lane.elements.key.offsetTop + note.normalHeight) {
+                            // Force onto key
+                            note.top = lane.elements.key.offsetTop + note.normalHeight;
+                            note.element.style.top = `${note.top}px`;
+                        }
+                        if (note.height > note.normalHeight) {
+                            // Simulator move down
+                            note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
+                            note.element.style.height = `${note.height}px`;
+                        } else {
+                            // Remove when height goes under the normal height
+                            this.removeNote(laneIndex, note);
+                        }
+                    } else {
+                        note.top += this.noteMoveAmount * deltaTime;
+                        note.element.style.top = `${note.top}px`;
+                        if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
+                            if (!lane.elements.notes.contains(note.element)) return;
+                            // Missed note
+                            if (this.combo) this.playSfx("combo-break");
+                            this.misses++;
+                            this.health = Math.min(0, this.health - 1);
+                            this.updateCombo(0);
+                            this.removeNote(laneIndex, note);
+                        }
                     }
                 });
             });
@@ -300,8 +317,11 @@ class Game {
         noteElement.style.top = `${top}px`;
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
-        lane.notes.push({ top, height: noteElement.offsetHeight, element: noteElement, id: lane.notesSpawned, slider: sliderHeight ? true : false });
-        noteElement.style.height = sliderHeight ? `${noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount)}px` : "auto";
+        const height = sliderHeight ? noteElement.offsetHeight + (this.beatToMs(sliderHeight) * this.noteMoveAmount) : noteElement.offsetHeight;
+        const note = { top, normalHeight: noteElement.offsetHeight, height, element: noteElement, id: lane.notesSpawned, isSlider: sliderHeight ? true : false };
+        lane.notes.push(note);
+        noteElement.style.height = `${height}px`;
+        return note;
     }
 
     removeNote(laneIndex, note) {
@@ -398,6 +418,8 @@ class Game {
 
     onKeyRelease(laneIndex) {
         this.lanes[laneIndex].elements.key.classList.remove("pressed");
+
+        if (this.lanes[laneIndex].notes[0]?.isSlider && this.lanes[laneIndex].notes[0]?.holding) this.releaseNote(laneIndex);
     }
 
     hitNote(laneIndex) {
@@ -405,14 +427,14 @@ class Game {
         const lane = this.lanes[laneIndex];
         const keyTop = lane.elements.key.offsetTop;
         const closestNote = lane.notes.reduce((prev, curr) => {
-            const currTop = curr.top - curr.height;
-            const prevTop = prev.top - prev.height;
+            const currTop = curr.top - curr.normalHeight;
+            const prevTop = prev.top - prev.normalHeight;
             const currDistance = Math.max(currTop - keyTop, keyTop - currTop);
             const prevDistance = Math.max(prevTop - keyTop, keyTop - prevTop);
             return currDistance < prevDistance ? curr : prev;
         });
 
-        const closestNoteTop = closestNote.top - closestNote.height;
+        const closestNoteTop = closestNote.top - closestNote.normalHeight;
         const distance = Math.max(closestNoteTop - keyTop, keyTop - closestNoteTop);
 
         if (distance > Math.max(...this.gameSettings.points.map(i => i.distance))) return; // Ignore if closest note is still too far
@@ -432,11 +454,27 @@ class Game {
             this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
         }
 
+        closestNote.holding = true;
         this.setHitScore(pointsToAdd.points);
         this.scoreNoMultiplier += pointsToAdd.points;
         this.score += pointsToAdd.points * this.multiplier;
         this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
-        this.removeNote(laneIndex, closestNote);
+        if (closestNote.isSlider) {
+        } else this.removeNote(laneIndex, closestNote);
+    }
+
+    releaseNote(laneIndex) {
+        const lane = this.lanes[laneIndex];
+        const keyTop = lane.elements.key.offsetTop;
+        const closestNote = lane.notes.reduce((prev, curr) => {
+            const currTop = curr.top - curr.normalHeight;
+            const prevTop = prev.top - prev.normalHeight;
+            const currDistance = Math.max(currTop - keyTop, keyTop - currTop);
+            const prevDistance = Math.max(prevTop - keyTop, keyTop - prevTop);
+            return currDistance < prevDistance ? curr : prev;
+        });
+
+        closestNote.holding = false;
     }
 
     gameLoop(callback) {

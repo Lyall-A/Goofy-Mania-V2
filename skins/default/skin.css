@@ -1,5 +1,5 @@
 #game {
-    --lane-width: 100px;
+    --lane-width: 140px;
     /* --lane-width: 20%; */
     --lane-margin: 5px;
     display: flex;
@@ -10,6 +10,7 @@
     font-family: Arial;
     position: relative;
     overflow: hidden;
+    cursor: none;
 }
 
 .background {
@@ -46,7 +47,7 @@
 .lanes {
     display: flex;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.90);
     position: absolute;
     min-width: var(--lane-width);
 }
