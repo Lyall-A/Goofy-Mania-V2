@@ -68,7 +68,7 @@
 }
 
 .note {
-    /* will-change: top, height; */
+    will-change: top, height;
     background-color: rgb(228, 228, 228);
     transform: translateY(-100%);
     position: absolute;
