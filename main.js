@@ -4,6 +4,7 @@ const mapsElement = document.getElementById("maps");
 const levelSelectElement = document.getElementById("level-select");
 const levelsElement = document.getElementById("levels");
 const gameElement = document.getElementById("game");
+const fpsElement = document.getElementById("fps");
 
 // Settings
 const defaultSettings = {
@@ -111,7 +112,7 @@ function showLevels(map) {
     map.levels.forEach(level => {
         const levelElement = document.createElement("div");
         levelElement.classList.add("level");
-        levelElement.onclick = () => startMap(map, level);
+        levelElement.onclick = () => startGame(map, level);
 
         const nameElement = document.createElement("div");
         const keysElement = document.createElement("div");
@@ -127,7 +128,7 @@ function showLevels(map) {
     levelSelectElement.style.display = "";
 }
 
-async function startMap(map, level) {
+async function startGame(map, level) {
     setLoadingText(`Loading map '${map.name}'`);
     const mapWithData = await getMapData(map);
     const levelData = await getLevelData(map, level);
@@ -135,8 +136,8 @@ async function startMap(map, level) {
     const user = {
         settings,
         modifiers: {
-            auto: true,
-            speed: 1.2,
+            // auto: true,
+            // speed: 1.2,
             pitch: true
         },
         skin
@@ -148,6 +149,8 @@ async function startMap(map, level) {
     setLoadingText();
     game.init();
     game.start();
+    game.on("onFpsUpdate", fps => fpsElement.innerHTML = `FPS: ${fps}`);
+    return game;
 }
 
 async function getRepository(repo) {
@@ -208,7 +211,7 @@ function loadSkin(skin) {
 }
 
 async function getData(path, obj, type) {
-    return obj.data || obj.file ? await fetch(`${path ? `${path}/` : ""}${obj.file}`).then(i => i[type || "blob"]()) : null;
+    return obj.data || obj.file ? await fetch(encodeURIComponent(`${path ? `${path}/` : ""}${obj.file}`)).then(i => i[type || "blob"]()) : null;
 }
 
 function setLoadingText(text = "") {

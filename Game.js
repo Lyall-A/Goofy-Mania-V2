@@ -70,6 +70,9 @@ class Game {
         this.givenPoints = {};
         this.scoreNoMultiplier = 0;
 
+        // Set CSS variables
+        this.game.style.setProperty("--game-width", `${this.game.offsetWidth}px`);
+
         // Create game
         this.elements.game = document.createElement("div");
         this.elements.game.classList.add("game");
@@ -149,6 +152,7 @@ class Game {
         // Create events
         if (!this.user.modifiers.auto) addEventListener("keydown", this.onKeyDown);
         if (!this.user.modifiers.auto) addEventListener("keyup", this.onKeyUp);
+        document.addEventListener("visibilitychange", this.onVisibilityChange);
 
         this.hasInit = true;
     }
@@ -186,8 +190,6 @@ class Game {
 
             if (this.running == null) {
                 // First run
-                document.addEventListener("visibilitychange", this.onVisibilityChange);
-
                 this.gameTimeout(() => this.notesReady = true, this.map.offset);
                 this.gameTimeout(() => {
                     this.music = this.playAudio(this.urls["music"], {
