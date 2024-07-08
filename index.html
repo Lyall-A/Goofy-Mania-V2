@@ -7,17 +7,29 @@
     <link rel="icon" type="image/x-icon" href="icon.ico">
     <title>Goofy Mania</title>
     <link rel="stylesheet" href="./main.css">
-    <script src="./main.js"></script>
+    <script src="./main.js" defer></script>
     <script src="./Game.js"></script>
 </head>
 
 <body>
-    <div style="position: absolute; top: 20px; left: 20px; font-family: Arial; color: red;">GOOFY MANIA<br>V2.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br>FEATURING NON-FUNCTIONAL SLIDERS</div>
-    <div id="fps" style="position: absolute; bottom: 20px; left: 20px; font-family: Arial; color: red; font-size: 2em;">FPS: ermmm what the sigma</div>
-    <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;" onclick="start()"></button>
-    <!-- <div id="game" style="max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div> -->
-    <div id="game"></div>
-    <script>
+    <div style="position: absolute; display: flex; justify-content: center; align-items: center; font-size: 3em; width: 100%; height: 100%;" id="loading-text"></div>
+    <div style="position: absolute; top: 20px; left: 20px; color: red;">GOOFY MANIA<br>V2.0000000001 ALPHA<br>PART OF MULTIPACK NOT TO BE SOLD SEPERATELY<br><div style="text-decoration: line-through; color: red;">FEATURING NON-FUNCTIONAL SLIDERS</div>FEATURING BROKEN ACCURACY</div>
+    <div id="fps" style="position: absolute; bottom: 20px; left: 20px; color: red;">FPS: ---</div>
+    <div id="map-select" style="display: none; width: 100%; z-index: 1;">
+        <h1 style="display: flex; justify-content: center; margin-top: 50px;">Map select</h1>
+        <div id="maps"></div>
+    </div>
+    <div id="level-select" style="display: none; width: 100%; z-index: 1;">
+        <h1 style="display: flex; justify-content: center; margin-top: 50px;">Level select</h1>
+        <div id="levels"></div>
+    </div>
+    <div style="display: flex; position: absolute; justify-content: center; align-items: center; width: 100%; height: 100%">
+        <div id="game" style="display: none; max-width: 100vw; max-height: 100vh; width: 1280px; height: 720px; resize: both;"></div>
+    </div>
+    <!-- <button id="button" style="width: 100%; height: 100%; font-size: 5em; background-color: black; color: white;" onclick="start()"></button> -->
+    <!-- <div id="game"></div> -->
+
+    <!-- <script>
         game = null;
 
         (async () => {
@@ -114,7 +126,7 @@
             });
             game.stop();
         }
-    </script>
+    </script> -->
 </body>
 
 </html>

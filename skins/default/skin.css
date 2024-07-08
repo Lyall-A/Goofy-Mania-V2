@@ -1,5 +1,33 @@
+body {
+    background-color: rgb(46, 46, 46);
+}
+
+* {
+    color: rgb(211, 211, 211);
+}
+
+#maps, #levels {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.map, .level {
+    width: 200px;
+    height: 250px;
+    border-radius: 25px;
+    background-color: rgb(83, 83, 83);
+    margin: 25px;
+}
+
+.map img {
+    width: 125px;
+    height: 125px;
+    aspect-ratio: 1;
+}
+
 #game {
-    --lane-width: 140px;
+    --lane-width: 50px;
     /* --lane-width: 20%; */
     --lane-margin: 5px;
     display: flex;
@@ -11,6 +39,14 @@
     position: relative;
     overflow: hidden;
     cursor: none;
+}
+
+#loading-text {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
 }
 
 .background {
@@ -77,6 +113,10 @@
     width: 100%;
     height: auto;
 }
+
+/* .note::before, .note::after {
+    border-radius: 100%;
+} */
 
 .note-4-2, .note-4-3 { background-color: rgb(118, 126, 201) }
 
