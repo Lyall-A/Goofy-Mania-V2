@@ -1,7 +1,55 @@
+body {
+    background-color: rgb(46, 46, 46);
+}
+
+* {
+    color: rgb(211, 211, 211);
+}
+
+#maps, #levels {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.map, .level {
+    display: flex;
+    /* justify-content: center; */
+    flex-direction: column;
+    align-items: center;
+    width: 200px;
+    height: 300px;
+    border-radius: 10px;
+    background-color: rgb(83, 83, 83);
+    margin: 10px;
+    overflow: hidden;
+}
+
+.map div, .level div {
+    text-align: center;
+}
+
+.map img {
+    margin: 10%;
+    object-fit: cover;
+    object-position: center;
+    width: 80%;
+    border-radius: 10px;
+    height: auto;
+    aspect-ratio: 1;
+}
+
+#loading-text {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+}
+
 #game {
-    --lane-width: 140px;
-    /* --lane-width: 20%; */
-    --lane-margin: 5px;
+    --lane-width: calc(var(--game-width) / 100 * 6); /* x% of game width */
+    --lane-margin: calc(var(--game-width) / 100 * 0.5);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -46,10 +94,10 @@
 
 .lanes {
     display: flex;
+    justify-content: center;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.90);
     position: absolute;
-    min-width: var(--lane-width);
 }
 
 .lane {
@@ -58,13 +106,9 @@
     flex-direction: column;
     margin-left: var(--lane-margin);
     margin-right: var(--lane-margin);
-    min-width: var(--lane-width);
-    position: relative;
-}
-
-.notes {
     height: 100%;
-    width: var(--key-width);
+    width: var(--lane-width);
+    position: relative;
 }
 
 .note {
@@ -77,6 +121,10 @@
     width: 100%;
     height: auto;
 }
+
+/* .note::before, .note::after {
+    border-radius: 100%;
+} */
 
 .note-4-2, .note-4-3 { background-color: rgb(118, 126, 201) }
 

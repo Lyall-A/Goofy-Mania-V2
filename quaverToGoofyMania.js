@@ -55,7 +55,7 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
         map.background.file = backgroundFile;
         map.name = title;
         map.artist = artist;
-        map.mappers.push({ name: creator });
+        map.mappers = [{ name: creator }];
         map.bpm = bpm;
         map.offset = 0;
         
