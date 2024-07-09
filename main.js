@@ -28,9 +28,10 @@ try { settings = JSON.parse(localStorage.getItem("gm-settings")) } catch (err) {
 // Repositories
 const repositories = [];
 
+// Variables
 const maps = [];
-
 let skin;
+const modifiers = { };
 
 (async () => {
     // Set loading screen
@@ -135,17 +136,13 @@ async function startGame(map, level) {
     
     const user = {
         settings,
-        modifiers: {
-            // auto: true,
-            // speed: 1.2,
-            pitch: true
-        },
+        modifiers,
         skin
     }
 
     levelSelectElement.style.display = "none";
     gameElement.style.display = "";
-    const game = new Game(gameElement, map, level, user);
+    game = new Game(gameElement, map, level, user);
     setLoadingText();
     game.init();
     game.start();
