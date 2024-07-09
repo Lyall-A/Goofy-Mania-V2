@@ -166,28 +166,7 @@ class Game {
             deltaTime = deltaTime * deltaTimeMultiplier;
             this.runningTime += deltaTime;
 
-            // Run timeouts
-            for (const i in this.timeouts) {
-                const timeout = this.timeouts[i];
-                if (!timeout) continue;
-                const { callback, ms, time } = timeout;
-                if (this.runningTime >= time + ms) {
-                    callback();
-                    this.timeouts[i] = null;
-                }
-            }
-
-            // Run intervals
-            for (const i in this.intervals) {
-                const interval = this.intervals[i];
-                if (!interval) continue;
-                const { callback, ms, time } = interval;
-                if (this.runningTime >= time + ms) {
-                    callback();
-                    this.intervals[i].time = time + ms;
-                }
-            }
-
+            // START GAME LOGIC
             if (this.running == null) {
                 // First run
                 this.gameTimeout(() => this.notesReady = true, this.map.offset);
@@ -222,8 +201,8 @@ class Game {
                     // Modifier: Auto
                     if (this.user.modifiers.auto) this.gameTimeout(() => {
                         this.onKeyRelease(noteToSpawn[0] - 1);
-                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), spawnedNote.isSlider ? (spawnedNote.height - spawnedNote.normalHeight) / this.noteMoveAmount : 20, `auto-key-${noteToSpawn[0]}-release`);
                         this.onKeyPress(noteToSpawn[0] - 1);
+                        this.gameTimeout(() => this.onKeyRelease(noteToSpawn[0] - 1), spawnedNote.isSlider ? (spawnedNote.height - spawnedNote.normalHeight) / this.noteMoveAmount : 20, `auto-key-${noteToSpawn[0]}-release`);
                     }, this.getMsToKey(noteToSpawn[0]));
                 }
             }
@@ -236,14 +215,14 @@ class Game {
                         if (note.height > note.normalHeight) {
                             // Simulate move down
                             note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
-                            note.element.style.height = `${note.height}px`;
+                            note.element.style.height = `${Math.round(note.height)}px`;
                         } else {
                             // Remove when height goes under the normal height
                             this.removeNote(laneIndex, note);
                         }
                     } else {
-                        note.top = Math.round(note.top + (this.noteMoveAmount * deltaTime)); // Increment top/Y
-                        note.element.style.top = `${note.top}px`; // Set top
+                        note.top = note.top + (this.noteMoveAmount * deltaTime); // Increment top/Y
+                        note.element.style.top = `${Math.round(note.top)}px`; // Set top
 
                         if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
                             if (!lane.elements.notes.contains(note.element)) return;
@@ -261,6 +240,30 @@ class Game {
             if (this.health <= 0) {
                 // TODO: death.
                 // console.log("DEATH")
+            }
+            // END GAME LOGIC
+
+            // TODO: better to run before or after?!?!?
+            // Run timeouts
+            for (const i in this.timeouts) {
+                const timeout = this.timeouts[i];
+                if (!timeout) continue;
+                const { callback, ms, time } = timeout;
+                if (this.runningTime >= time + ms) {
+                    callback();
+                    this.timeouts[i] = null;
+                }
+            }
+
+            // Run intervals
+            for (const i in this.intervals) {
+                const interval = this.intervals[i];
+                if (!interval) continue;
+                const { callback, ms, time } = interval;
+                if (this.runningTime >= time + ms) {
+                    callback();
+                    this.intervals[i].time = time + ms;
+                }
             }
 
             if (this.gameSettings.captureFps) this.fpsHistory.push(fps);
