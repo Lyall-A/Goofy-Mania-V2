@@ -1,0 +1,28 @@
+{
+    "audio": {
+        "file": "audio.mp3"
+    },
+    "cover": {
+        "file": null
+    },
+    "background": {
+        "file": null
+    },
+    "name": "Test Map",
+    "artist": "An artist",
+    "mappers": [
+        {
+            "name": "Lyall"
+        }
+    ],
+    "offset": 0,
+    "bpm": 100,
+    "levels": [
+        {
+            "scrollSpeed": 17,
+            "name": "Test Level",
+            "keys": 4,
+            "file": "test_level.gml"
+        }
+    ]
+}

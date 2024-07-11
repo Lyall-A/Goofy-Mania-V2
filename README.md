@@ -8,4 +8,4 @@
 
 **.gmr**
 
-Array of .gmm paths or a GMM object with a `path` attribute pointing to a sub-directory of the map.
+Array of GMM object's with an extra `path` entry with the value of the map directory

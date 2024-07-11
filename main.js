@@ -19,6 +19,7 @@ const defaultSettings = {
     },
     repositories: [
         { name: "Main", path: "maps", file: "repo.gmr" }
+        // { name: "Test", path: "test", file: "test_repo.gmr" }
     ]
 }
 let settings;
@@ -31,12 +32,12 @@ const repositories = [];
 // Variables
 const maps = [];
 let skin;
-const modifiers = { };
+const modifiers = {};
 
 (async () => {
     // Set loading screen
     setLoadingText("Loading default skin...");
-    
+
     // Load default skin
     const defaultSkin = await getSkinData("skins/default", "skin.gms");
     loadDefaultSkin(defaultSkin);
@@ -49,30 +50,21 @@ const modifiers = { };
         // TODO: i cant be bothered
     }
 
-    setLoadingText(`Loading ${settings.repositories.length} repositories`);
-
+    let reposLoaded = 0;
     // Load repositories
-    for (const repo of settings.repositories || []) {
-        repositories.push(await getRepository(repo));
-    }
+    for (const repoInfo of settings.repositories || []) {
+        setLoadingText(`Loading repositories: ${settings.repositories.length - reposLoaded}`);
+        const repo = await getRepository(repoInfo);
+        repositories.push(repo);
+        reposLoaded++;
 
-    for (const repo of repositories) {
         if (repo.data["maps"]) {
             // Repository of maps
             for (const repoData of repo.data["maps"]) {
-                if (typeof repoData == "string") {
-                    // Is .gmm path, load it and add
-                    maps.push({
-                        ...await fetch(`${repo.path}/${repoData}`).then(i => i.json()),
-                        path: `${repo.path}/${repoData}`
-                    });
-                } else {
-                    // Is GMM object
-                    maps.push({
-                        ...repoData,
-                        path: `${repo.path}/${repoData.path}`
-                    });
-                }
+                maps.push({
+                    ...repoData,
+                    fullPath: `${repo.path}/${repoData.path}`
+                });
             }
         }
     }
@@ -91,7 +83,7 @@ const modifiers = { };
         const artistElement = document.createElement("div");
         const mappersElement = document.createElement("div");
 
-        imgElement.src = encodeURIComponent(`${map.path}/${map.cover?.file || map.background?.file}`);
+        if (map.cover?.file || map.background?.file) imgElement.src = encodeURIComponent(`${map.fullPath}/${map.cover?.file || map.background?.file}`);
         nameElement.innerHTML = map.name;
         artistElement.innerHTML = map.artist;
         mappersElement.innerHTML = map.mappers.map(i => i.name).join(", ");
@@ -109,7 +101,7 @@ const modifiers = { };
 
 function showLevels(map) {
     mapSelectElement.style.display = "none";
-    
+
     map.levels.forEach(level => {
         const levelElement = document.createElement("div");
         levelElement.classList.add("level");
@@ -133,7 +125,7 @@ async function startGame(map, level) {
     setLoadingText(`Loading map '${map.name}'`);
     const mapWithData = await getMapData(map);
     const levelData = await getLevelData(map, level);
-    
+
     const user = {
         settings,
         modifiers,
@@ -165,15 +157,15 @@ function saveSettings() {
 }
 
 async function getLevelData(map, level) {
-    level.data = await getData(map.path, level, "json");
+    level.data = await getData(map.fullPath, level, "json");
 
     return level;
 }
 
 async function getMapData(map) {
-    map.audio.data = await getData(map.path, map.audio);
-    map.cover.data = await getData(map.path, map.cover);
-    map.background.data = await getData(map.path, map.background);
+    map.audio.data = await getData(map.fullPath, map.audio);
+    map.cover.data = await getData(map.fullPath, map.cover);
+    map.background.data = await getData(map.fullPath, map.background);
 
     return map;
 }

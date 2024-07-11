@@ -45,7 +45,7 @@ class Game {
         this.elements = {};
         this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
-        this.notesRemoved = 0; // Total amount of notes removed/despawned
+        this.notesHit = 0; // Total amount of notes hit
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
@@ -241,6 +241,8 @@ class Game {
                 // TODO: death.
                 // console.log("DEATH")
             }
+
+            this.updateAccuracy();
             // END GAME LOGIC
 
             // TODO: better to run before or after?!?!?
@@ -323,7 +325,7 @@ class Game {
         noteElement.style.top = `${top}px`;
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
-        const height = sliderHeight ? (this.beatToMs(sliderHeight) * this.noteMoveAmount) + noteElement.offsetHeight : noteElement.offsetHeight;
+        const height = sliderHeight ? Math.max(noteElement.offsetHeight, (this.beatToMs(sliderHeight) * this.noteMoveAmount + noteElement.offsetHeight) / this.speed) : noteElement.offsetHeight;
         const note = { top, normalHeight: noteElement.offsetHeight, height, element: noteElement, id: lane.notesSpawned, isSlider: sliderHeight ? true : false };
         // lane.notes.push(note);
         lane.notes.add(note);
@@ -334,8 +336,6 @@ class Game {
     removeNote(laneIndex, note) {
         const lane = this.lanes[laneIndex];
         lane.notes.delete(note);
-        this.notesRemoved++;
-        this.updateAccuracy();
         note.element.remove();
     }
 
@@ -363,7 +363,8 @@ class Game {
     }
 
     calculateAccuracy() {
-        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * this.notesRemoved)) * 100;
+        if (!this.notesHit && !this.misses) return 100;
+        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * this.notesHit)) * 100;
     }
 
     updateAccuracy() {
@@ -454,8 +455,6 @@ class Game {
             return Math.abs(curr.distance - distance) < Math.abs(prev.distance - distance) ? curr : prev;
         });
 
-        // TODO: SLIDERSSSS IT NEEDS TO BE HELD DOWN HOW TF AM I GONNA DOT AHT
-
         if (pointsToAdd.isBadHit) {
             this.playSfx("bad-hit");
             this.updateCombo(0);
@@ -465,13 +464,14 @@ class Game {
             this.updateCombo();
             this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
         }
-
-        closestNote.holding = true;
+        
+        this.notesHit++;
         this.setHitScore(pointsToAdd.points);
         this.scoreNoMultiplier += pointsToAdd.points;
         this.score += pointsToAdd.points * this.multiplier;
         this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         if (closestNote.isSlider) {
+            closestNote.holding = true;
             // Force onto key
             closestNote.top = keyTop + closestNote.normalHeight;
             closestNote.element.style.top = `${closestNote.top}px`;
