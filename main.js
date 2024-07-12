@@ -3,6 +3,7 @@ const mapSelectElement = document.getElementById("map-select");
 const mapsElement = document.getElementById("maps");
 const levelSelectElement = document.getElementById("level-select");
 const levelsElement = document.getElementById("levels");
+const gameWrapper = document.getElementById("game-wrapper");
 const gameElement = document.getElementById("game");
 const fpsElement = document.getElementById("fps");
 
@@ -123,8 +124,8 @@ function showLevels(map) {
 
 async function startGame(map, level) {
     setLoadingText(`Loading map '${map.name}'`);
-    const mapWithData = await getMapData(map);
-    const levelData = await getLevelData(map, level);
+    await getMapData(map);
+    await getLevelData(map, level);
 
     const user = {
         settings,
@@ -133,6 +134,8 @@ async function startGame(map, level) {
     }
 
     levelSelectElement.style.display = "none";
+    if (settings.gameWidth) gameElement.style.width = `${settings.gameWidth}px`;
+    if (settings.gameHeight) gameElement.style.height = `${settings.gameHeight}px`;
     gameElement.style.display = "";
     game = new Game(gameElement, map, level, user);
     setLoadingText();

@@ -72,6 +72,7 @@ class Game {
 
         // Set CSS variables
         this.game.style.setProperty("--game-width", `${this.game.offsetWidth}px`);
+        this.game.style.setProperty("--game-height", `${this.game.offsetHeight}px`);
 
         // Create game
         this.elements.game = document.createElement("div");
@@ -364,7 +365,7 @@ class Game {
 
     calculateAccuracy() {
         if (!this.notesHit && !this.misses) return 100;
-        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * this.notesHit)) * 100;
+        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * (this.notesHit + this.misses + this.badHits))) * 100;
     }
 
     updateAccuracy() {
@@ -388,7 +389,7 @@ class Game {
             Object.entries(hitScore.styles || {}).forEach(([key, value]) => this.elements.hitScore.style[key] = value);
 
             if (hitScore.type == "text") {
-                this.elements.hitScore.innerHTML = hitScore.text;
+                this.elements.hitScore.innerHTML = `<div>${hitScore.text}</div>`;
             } else if (hitScore.type == "image") {
                 this.elements.hitScore.innerHTML = `<img src="${this.urls[`${points}-hit-score`] || this.urls["default-hit-score"]}">`
             } else this.elements.hitScore.innerHTML = "";
