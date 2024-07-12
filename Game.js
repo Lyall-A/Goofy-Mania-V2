@@ -1,4 +1,3 @@
-let deltaTimeMultiplier = 1;
 
 class Game {
     constructor(game, map, level, user, gameSettings) {
@@ -8,10 +7,12 @@ class Game {
         this.user = user;
         this.gameSettings = gameSettings;
     }
-
+    
     init() {
         if (this.hasInit) throw new Error("Already initialized!");
-
+        
+        this.deltaTimeMultiplier = 1;
+        
         // Set variables
         if (!this.gameSettings) this.gameSettings = {
             // TODO: simplify comments
@@ -168,7 +169,7 @@ class Game {
 
         // Game loop
         this.gameLoop((deltaTime, loop, fps) => {
-            deltaTime = deltaTime * deltaTimeMultiplier;
+            deltaTime = deltaTime * this.deltaTimeMultiplier;
             this.runningTime += deltaTime;
 
             // START GAME LOGIC

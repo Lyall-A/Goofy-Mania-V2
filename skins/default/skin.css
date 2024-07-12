@@ -54,8 +54,8 @@ body {
     --hit-score-height: calc(var(--game-height) / 100 * 7);
     --accuracy-right: calc(var(--game-width) / 100 * 0.5);
     --accuracy-top: var(--accuracy-right);
-    --combo-top: calc(var(--game-width) / 100 * 20);
-    --hit-score-top: calc(var(--game-width) / 100 * 25);
+    --combo-bottom: calc(var(--game-height) / 100 * 60);
+    --hit-score-bottom: calc(var(--game-height) / 100 * 50);
     font-size: calc(var(--game-width) / 100 * 2.5);
     --hit-score-after-scale: 125%;
     display: flex;
