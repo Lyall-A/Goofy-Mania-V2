@@ -74,6 +74,10 @@ class Game {
         this.game.style.setProperty("--game-width", `${this.game.offsetWidth}px`);
         this.game.style.setProperty("--game-height", `${this.game.offsetHeight}px`);
 
+        // Change CSS
+        this.game.style.width = "var(--game-width)";
+        this.game.style.height = "var(--game-height)";
+
         // Create game
         this.elements.game = document.createElement("div");
         this.elements.game.classList.add("game");
