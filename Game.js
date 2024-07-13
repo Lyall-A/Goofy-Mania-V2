@@ -243,10 +243,12 @@ class Game {
             // Move notes down/despawn when off screen
             this.lanes.forEach((lane, laneIndex) => {
                 lane.notes.forEach(note => {
-                    if (note.top - note.normalHeight > lane.elements.key.offsetTop && this.gameSettings.noteDirection == 1) note.passedKey = true; // TODO: more directions?!?!?!?!?!?!
+                    if (this.gameSettings.noteDirection == 1 && this.getActualTop(note) > lane.elements.key.offsetTop) note.passedKey = true; // TODO: more directions?!?!?!?!?!?!
+                    if (this.gameSettings.noteDirection == 2 && note.top > lane.elements.key.offsetTop) note.passedKey = true; // TODO: more directions?!?!?!?!?!?!
 
                     if (note.isSlider) {
-                        if (note.top - note.height > lane.elements.key.offsetTop && this.gameSettings.noteDirection == 1) note.endPassedKey = true;
+                        if (this.gameSettings.noteDirection == 1 && this.getActualTop(note, true) > lane.elements.key.offsetTop) note.endPassedKey = true;
+                        if (this.gameSettings.noteDirection == 2 && note.top > lane.elements.key.offsetTop) note.endPassedKey = true;
                     }
 
                     if (note.isSlider) {
@@ -291,7 +293,7 @@ class Game {
                         this.getNewNotePos(note, deltaTime);
                         note.element.style.top = `${Math.round(note.top)}px`; // Set top
 
-                        if (note.top - note.element.offsetHeight >= this.game.offsetHeight || (note.passedKey && this.getNoteDistance(lane, note) > this.pointRange)) {
+                        if (this.getActualTop(note) >= this.game.offsetHeight || (note.passedKey && this.getNoteDistance(lane, note) > this.pointRange)) {
                             // Missed note
                             this.miss();
                             this.removeNote(lane, note);
@@ -358,19 +360,36 @@ class Game {
     spawnNote(laneNum, sliderHeight = 0) {
         const laneIndex = laneNum - 1;
         const lane = this.lanes[laneIndex];
-        let top = 0;
+        let top = this.gameSettings.noteDirection == 1 ?
+            0 :
+            this.gameSettings.noteDirection == 2 ?
+                this.game.offsetHeight :
+                null;
         const noteElement = document.createElement("div");
         noteElement.classList.add("note");
         noteElement.classList.add(`note-${this.lanes.length}-${laneNum}`);
         noteElement.style.top = `${top}px`;
+        noteElement.style.transform = this.gameSettings.noteDirection == 1 ?
+            "translateY(-100%)" :
+            this.gameSettings.noteDirection == 2 ?
+                "translateY(0%)" :
+                null;
         lane.elements.notes.appendChild(noteElement);
         lane.notesSpawned++;
         const height = sliderHeight ? Math.max(noteElement.offsetHeight, (this.beatToMs(sliderHeight) * this.noteMoveAmount + noteElement.offsetHeight) / this.speed) : noteElement.offsetHeight;
-        const note = { top, normalHeight: noteElement.offsetHeight, height, element: noteElement, id: lane.notesSpawned, isSlider: sliderHeight ? true : false };
+        const note = { top, normalHeight: noteElement.offsetHeight, height, element: noteElement, id: lane.notesSpawned, isSlider: sliderHeight ? true : false, holding: false, holdStart: null };
         // lane.notes.push(note);
         lane.notes.add(note);
         noteElement.style.height = `${height}px`;
         return note;
+    }
+
+    getActualTop(note, useHeight) {
+        return this.gameSettings.noteDirection == 1 ?
+            note.top - (useHeight ? note.height : note.normalHeight) :
+        this.gameSettings.noteDirection == 2 ?
+            note.top :
+        null;
     }
 
     getNewNotePos(note, deltaTime) {
@@ -511,7 +530,7 @@ class Game {
 
     getNoteDistance(lane, note, isEnd) {
         const keyTop = lane.elements.key.offsetTop;
-        const noteTop = note.top - (isEnd ? note.height : note.normalHeight);
+        const noteTop = this.getActualTop(note, isEnd);
         // console.log(noteTop - keyTop)
         return Math.max(noteTop - keyTop, keyTop - noteTop);
     }
@@ -521,7 +540,7 @@ class Game {
         const closestNote = this.getClosestNote(lane);
         const noteDistance = this.getNoteDistance(lane, closestNote);
 
-        const closestNoteTop = closestNote.top - closestNote.normalHeight;
+        const closestNoteTop = this.getActualTop(closestNote);
 
         if (noteDistance > this.pointRange || closestNote.finished) return; // Ignore if closest note is still too far or has been finished
         const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
@@ -546,7 +565,11 @@ class Game {
             closestNote.holding = true;
             closestNote.holdStart = Date.now(); // For combo increments while holding
             // Force onto key
-            closestNote.top = keyTop + closestNote.normalHeight;
+            closestNote.top = this.gameSettings.noteDirection == 1 ?
+                keyTop + closestNote.normalHeight :
+            this.gameSettings.noteDirection == 2 ?
+                keyTop :
+            null;
             closestNote.element.style.top = `${closestNote.top}px`;
             // Change note height depending on the distance when pressed
             closestNote.height += Math.abs(closestNoteTop - keyTop) > Math.abs(keyTop - closestNoteTop) ? closestNoteTop - keyTop : keyTop - closestNoteTop;

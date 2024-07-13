@@ -45,6 +45,8 @@ const modifiers = {};
 
     // TEMP
     skin = defaultSkin;
+    // const testSkin = await getSkinData("skins/up-test", "skin.gms");
+    // loadSkin(testSkin);
 
     if (settings.skin) {
         setLoadingText(`Loading skin '${settings.skin.name}'...`);
@@ -177,9 +179,9 @@ async function getSkinData(skinPath) {
     const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
 
     skin.style.data = await getData(skinPath, skin.style);
-    for (const [key, value] of Object.entries(skin.sfx)) value.data = await getData(skinPath, value);
-    for (const [key, value] of Object.entries(skin.hitScores[1])) value.data = await getData(skinPath, value);
-    skin.hitScores[0].data = await getData(skinPath, skin.hitScores[0]);
+    for (const [key, value] of Object.entries(skin.sfx || { })) value.data = await getData(skinPath, value);
+    for (const [key, value] of Object.entries(skin.hitScores?.[1] || { })) value.data = await getData(skinPath, value);
+    if (skin.hitScores?.[0]) skin.hitScores[0].data = await getData(skinPath, skin.hitScores[0]);
 
     return skin;
 }

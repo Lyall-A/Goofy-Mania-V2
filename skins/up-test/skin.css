@@ -1,0 +1,8 @@
+.lane {
+    flex-direction: column-reverse;
+}
+
+.key {
+    margin-top: 75px;
+    margin-bottom: unset;
+}

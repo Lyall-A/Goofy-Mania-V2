@@ -1,0 +1,5 @@
+{
+    "style": {
+        "file": "skin.css"
+    }
+}
