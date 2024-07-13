@@ -7,18 +7,17 @@ class Game {
         this.user = user;
         this.gameSettings = gameSettings;
     }
-    
+
     init() {
         if (this.hasInit) throw new Error("Already initialized!");
-        
+
         this.deltaTimeMultiplier = 1;
-        
+
         // Set variables
         if (!this.gameSettings) this.gameSettings = {
             // TODO: simplify comments
             captureFps: true, // Capture FPS
             logFps: false, // Log FPS
-            dontCheckIfNotesOffScreen: false, // Don't check if notes off screen
             maxMultiplier: 4, // Max multiplier
             maxHealth: 100, // Max health
             defaultHealth: 50, // Default health
@@ -29,6 +28,8 @@ class Game {
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             defaultScrollSpeed: 20,
+            sliderComboIncrementInterval: 250,
+            noteDirection: 1, // 1: DOWN, 2: UP
         };
 
         this.scrollSpeed = (this.user.settings.scrollSpeed || this.level.scrollSpeed) ? Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, this.user.settings.scrollSpeed || this.level.scrollSpeed)) : this.gameSettings.defaultScrollSpeed;
@@ -47,6 +48,7 @@ class Game {
         this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesHit = 0; // Total amount of notes hit
+        this.slidersFinished = 0;
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
@@ -58,7 +60,9 @@ class Game {
             { distance: 125 * this.pointDistanceMultiplier, points: 100 },
             { distance: 175 * this.pointDistanceMultiplier, points: 50 },
             { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
-        ]
+        ];
+
+        this.pointRange = Math.max(...this.gameSettings.points.map(i => i.distance));
 
         this.health = this.gameSettings.defaultHealth;
         this.score = 0;
@@ -172,6 +176,29 @@ class Game {
             deltaTime = deltaTime * this.deltaTimeMultiplier;
             this.runningTime += deltaTime;
 
+            // TODO: better to run before or after?!?!?
+            // Run timeouts
+            for (const i in this.timeouts) {
+                const timeout = this.timeouts[i];
+                if (!timeout) continue;
+                const { callback, ms, time } = timeout;
+                if (this.runningTime >= time + ms) {
+                    callback();
+                    this.timeouts[i] = null;
+                }
+            }
+
+            // Run intervals
+            for (const i in this.intervals) {
+                const interval = this.intervals[i];
+                if (!interval) continue;
+                const { callback, ms, time } = interval;
+                if (this.runningTime >= time + ms) {
+                    callback();
+                    this.intervals[i].time = time + ms;
+                }
+            }
+
             // START GAME LOGIC
             if (this.running == null) {
                 // First run
@@ -216,28 +243,58 @@ class Game {
             // Move notes down/despawn when off screen
             this.lanes.forEach((lane, laneIndex) => {
                 lane.notes.forEach(note => {
-                    if (note.isSlider && note.holding) {
+                    if (note.top - note.normalHeight > lane.elements.key.offsetTop && this.gameSettings.noteDirection == 1) note.passedKey = true; // TODO: more directions?!?!?!?!?!?!
+
+                    if (note.isSlider) {
+                        if (note.top - note.height > lane.elements.key.offsetTop && this.gameSettings.noteDirection == 1) note.endPassedKey = true;
+                    }
+
+                    if (note.isSlider) {
                         // If note is slider
-                        if (note.height > note.normalHeight) {
-                            // Simulate move down
-                            note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
-                            note.element.style.height = `${Math.round(note.height)}px`;
+                        if (note.holding) {
+                            if (note.height > note.normalHeight) {
+                                // Simulate move down
+                                note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
+                                note.element.style.height = `${Math.round(note.height)}px`;
+                                const date = Date.now();
+                                if (date > note.holdStart + this.gameSettings.sliderComboIncrementInterval && (date - note.holdStart) % this.gameSettings.sliderComboIncrementInterval <= deltaTime) this.updateCombo();
+                            } else
+                                if (this.getNoteDistance(lane, note, true) > this.pointRange) {
+                                    // Held too long
+                                    this.miss();
+                                    this.removeNote(lane, note);
+                                } else {
+                                    // Hide and move down like a regular note when height <= normal height
+                                    note.element.style.display = "none";
+                                    note.top = note.top + (this.noteMoveAmount * deltaTime); // Increment top/Y
+                                    note.element.style.top = `${Math.round(note.top)}px`; // Set top
+                                }
                         } else {
-                            // Remove when height goes under the normal height
-                            this.removeNote(laneIndex, note);
+                            // Move slider
+                            this.getNewNotePos(note, deltaTime);
+                            note.element.style.top = `${Math.round(note.top)}px`; // Set top
+
+                            if (note.passedKey && this.getNoteDistance(lane, note) > this.pointRange && !note.finished) {
+                                // Missed slider
+                                note.finished = true;
+                                this.miss();
+                            }
+                        }
+
+                        if (note.endPassedKey && this.getNoteDistance(lane, note, true) > this.pointRange) {
+                            // End of slider passed
+                            if (!note.finished) this.miss();
+                            this.removeNote(lane, note);
                         }
                     } else {
-                        note.top = note.top + (this.noteMoveAmount * deltaTime); // Increment top/Y
+                        // Move note
+                        this.getNewNotePos(note, deltaTime);
                         note.element.style.top = `${Math.round(note.top)}px`; // Set top
 
-                        if (!this.gameSettings.dontCheckIfNotesOffScreen && note.top - note.element.offsetHeight >= this.game.offsetHeight) {
-                            if (!lane.elements.notes.contains(note.element)) return;
+                        if (note.top - note.element.offsetHeight >= this.game.offsetHeight || (note.passedKey && this.getNoteDistance(lane, note) > this.pointRange)) {
                             // Missed note
-                            if (this.combo) this.playSfx("combo-break");
-                            this.misses++;
-                            this.health = Math.max(0, this.health - 1);
-                            this.updateCombo(0);
-                            this.removeNote(laneIndex, note);
+                            this.miss();
+                            this.removeNote(lane, note);
                         }
                     }
                 });
@@ -250,29 +307,6 @@ class Game {
 
             this.updateAccuracy();
             // END GAME LOGIC
-
-            // TODO: better to run before or after?!?!?
-            // Run timeouts
-            for (const i in this.timeouts) {
-                const timeout = this.timeouts[i];
-                if (!timeout) continue;
-                const { callback, ms, time } = timeout;
-                if (this.runningTime >= time + ms) {
-                    callback();
-                    this.timeouts[i] = null;
-                }
-            }
-
-            // Run intervals
-            for (const i in this.intervals) {
-                const interval = this.intervals[i];
-                if (!interval) continue;
-                const { callback, ms, time } = interval;
-                if (this.runningTime >= time + ms) {
-                    callback();
-                    this.intervals[i].time = time + ms;
-                }
-            }
 
             if (this.gameSettings.captureFps) this.fpsHistory.push(fps);
 
@@ -339,10 +373,29 @@ class Game {
         return note;
     }
 
-    removeNote(laneIndex, note) {
-        const lane = this.lanes[laneIndex];
+    getNewNotePos(note, deltaTime) {
+        const newPos = {
+            x: note.offsetLeft,
+            y: this.gameSettings.noteDirection == 1 ?
+                note.top + this.noteMoveAmount * deltaTime :
+                this.gameSettings.noteDirection == 2 ?
+                    note.top - this.noteMoveAmount * deltaTime :
+                    null
+        };
+        // note.left = newPos.x;
+        note.top = newPos.y;
+    }
+
+    removeNote(lane, note) {
         lane.notes.delete(note);
         note.element.remove();
+    }
+
+    miss() {
+        if (this.combo) this.playSfx("combo-break");
+        this.misses++;
+        this.health = Math.max(0, this.health - 1);
+        this.updateCombo(0);
     }
 
     createUrl(key, data) {
@@ -370,7 +423,7 @@ class Game {
 
     calculateAccuracy() {
         if (!this.notesHit && !this.misses) return 100;
-        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * (this.notesHit + this.misses + this.badHits))) * 100;
+        return (this.scoreNoMultiplier / (Math.max(...this.gameSettings.points.map(i => i.points)) * (this.notesHit + this.slidersFinished + this.misses + this.badHits))) * 100;
     }
 
     updateAccuracy() {
@@ -424,29 +477,28 @@ class Game {
     }
 
     onKeyPress(laneIndex) {
-        this.lanes[laneIndex].elements.key.classList.add("pressed")
+        const lane = this.lanes[laneIndex];
+        lane.elements.key.classList.add("pressed")
 
         this.playSfx("hit");
         // if (this.lanes[laneIndex].notes.length) this.hitNote(laneIndex);
-        if (this.lanes[laneIndex].notes.size) this.hitNote(laneIndex);
+        if (lane.notes.size) this.hitNote(lane);
     }
 
     onKeyRelease(laneIndex) {
-        this.lanes[laneIndex].elements.key.classList.remove("pressed");
+        const lane = this.lanes[laneIndex];
+        lane.elements.key.classList.remove("pressed");
 
-        const note = this.lanes[laneIndex].notes.values().next().value;
-        if (note?.isSlider && note?.holding) this.releaseNote(laneIndex);
+        const note = lane.notes.values().next().value;
+        if (note?.isSlider && note?.holding) this.releaseNote(lane);
     }
 
-    hitNote(laneIndex) {
-        const lane = this.lanes[laneIndex];
-        const keyTop = lane.elements.key.offsetTop;
+    getClosestNote(lane) {
         let closestNote = null;
         let distance = null;
 
         for (const note of lane.notes) {
-            const noteTop = note.top - note.normalHeight;
-            const noteDistance = Math.max(noteTop - keyTop, keyTop - noteTop);
+            const noteDistance = this.getNoteDistance(lane, note);
 
             if (closestNote == null || noteDistance < distance) {
                 closestNote = note;
@@ -454,12 +506,27 @@ class Game {
             }
         }
 
+        return closestNote;
+    }
+
+    getNoteDistance(lane, note, isEnd) {
+        const keyTop = lane.elements.key.offsetTop;
+        const noteTop = note.top - (isEnd ? note.height : note.normalHeight);
+        // console.log(noteTop - keyTop)
+        return Math.max(noteTop - keyTop, keyTop - noteTop);
+    }
+
+    hitNote(lane) {
+        const keyTop = lane.elements.key.offsetTop;
+        const closestNote = this.getClosestNote(lane);
+        const noteDistance = this.getNoteDistance(lane, closestNote);
+
         const closestNoteTop = closestNote.top - closestNote.normalHeight;
 
-        if (distance > Math.max(...this.gameSettings.points.map(i => i.distance))) return; // Ignore if closest note is still too far
-        const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => {
-            return Math.abs(curr.distance - distance) < Math.abs(prev.distance - distance) ? curr : prev;
-        });
+        if (noteDistance > this.pointRange || closestNote.finished) return; // Ignore if closest note is still too far or has been finished
+        const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
+
+        this.notesHit++;
 
         if (pointsToAdd.isBadHit) {
             this.playSfx("bad-hit");
@@ -470,28 +537,55 @@ class Game {
             this.updateCombo();
             this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
         }
-        
-        this.notesHit++;
+
         this.setHitScore(pointsToAdd.points);
         this.scoreNoMultiplier += pointsToAdd.points;
         this.score += pointsToAdd.points * this.multiplier;
         this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         if (closestNote.isSlider) {
             closestNote.holding = true;
+            closestNote.holdStart = Date.now(); // For combo increments while holding
             // Force onto key
             closestNote.top = keyTop + closestNote.normalHeight;
             closestNote.element.style.top = `${closestNote.top}px`;
-            // Simulate note moving down
+            // Change note height depending on the distance when pressed
             closestNote.height += Math.abs(closestNoteTop - keyTop) > Math.abs(keyTop - closestNoteTop) ? closestNoteTop - keyTop : keyTop - closestNoteTop;
             closestNote.element.style.height = `${closestNote.height}px`;
-        } else this.removeNote(laneIndex, closestNote);
+        } else this.removeNote(lane, closestNote);
     }
 
-    releaseNote(laneIndex) {
-        const foundNote = this.lanes[laneIndex].notes.values().find(i => i.holding);
-        if (foundNote) {
-            this.removeNote(laneIndex, foundNote);
+    releaseNote(lane) {
+        const foundNote = lane.notes.values().find(i => i.holding);
+        if (!foundNote) return;
+        if (foundNote.isSlider) {
+            foundNote.holding = false;
+            const noteDistance = this.getNoteDistance(lane, foundNote, true);
+            if (noteDistance > this.pointRange) {
+                // Miss if still too far from end
+                foundNote.finished = true;
+                return this.miss();
+            }
+
+            const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
+
+            this.slidersFinished++;
+
+            if (pointsToAdd.isBadHit) {
+                this.playSfx("bad-hit");
+                this.updateCombo(0);
+                this.badHits++;
+                this.health = Math.min(0, this.health - 1);
+            } else {
+                this.updateCombo();
+                this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
+            }
+
+            this.setHitScore(pointsToAdd.points);
+            this.scoreNoMultiplier += pointsToAdd.points;
+            this.score += pointsToAdd.points * this.multiplier;
+            this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         }
+        this.removeNote(lane, foundNote);
     }
 
     gameLoop(callback) {
