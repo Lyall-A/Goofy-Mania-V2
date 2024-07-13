@@ -28,7 +28,7 @@ class Game {
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             defaultScrollSpeed: 20,
-            sliderComboIncrementInterval: 250,
+            sliderComboIncrementInterval: 100,
             noteDirection: 1, // 1: DOWN, 2: UP
         };
 
