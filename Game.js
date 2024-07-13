@@ -28,7 +28,7 @@ class Game {
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             defaultScrollSpeed: 20,
-            sliderComboIncrementInterval: 100,
+            sliderComboIncrementInterval: 0, // TODO: its fucked
             noteDirection: 1, // 1: DOWN, 2: UP
         };
 
@@ -257,7 +257,7 @@ class Game {
                                 note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
                                 note.element.style.height = `${Math.round(note.height)}px`;
                                 const date = Date.now();
-                                if (date > note.holdStart + this.gameSettings.sliderComboIncrementInterval && (date - note.holdStart) % this.gameSettings.sliderComboIncrementInterval <= deltaTime) this.updateCombo();
+                                if (date > note.holdStart + this.gameSettings.sliderComboIncrementInterval && (date - note.holdStart) % this.gameSettings.sliderComboIncrementInterval <= deltaTime) this.updateCombo(); // TODO: pretty inaccurate and broken
                             } else
                                 if (this.getNoteDistance(lane, note, true) > this.pointRange) {
                                     // Held too long
@@ -576,7 +576,6 @@ class Game {
                 this.badHits++;
                 this.health = Math.min(0, this.health - 1);
             } else {
-                this.updateCombo();
                 this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
             }
 
