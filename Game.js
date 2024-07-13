@@ -23,8 +23,10 @@ class Game {
             defaultHealth: 50, // Default health
             minSpeed: 0.5, // Modifier: Speed
             maxSpeed: 2, // Modifier: Speed
+            speedRound: 0.05, // TODO
             maxScrollSpeed: 40,
             minScrollSpeed: 5,
+            scrollSpeedRound: 1, // TODO
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             defaultScrollSpeed: 20,
@@ -459,7 +461,6 @@ class Game {
     setHitScore(points) {
         this.elements.hitScore.removeAttribute("style");
         this.elements.hitScore.style.display = "none";
-        // this.removeGameTimeout("hitScoreHide");
         this.gameTimeout(() => {
             const hitScore = { ...this.defaultHitScore, ...this.hitScores[points] };
             this.elements.hitScore.style.display = "";

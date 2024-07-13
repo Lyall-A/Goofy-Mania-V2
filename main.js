@@ -19,7 +19,7 @@ const defaultSettings = {
         "7-keys": "sdf jkl".split("")
     },
     repositories: [
-        { name: "Main", path: "maps", file: "repo.gmr" }
+        { name: "Main", path: "maps", file: "repo.gmr" },
         // { name: "Test", path: "test", file: "test_repo.gmr" }
     ]
 }
