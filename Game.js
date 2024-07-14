@@ -11,7 +11,7 @@ class Game {
     init() {
         if (this.hasInit) throw new Error("Already initialized!");
 
-        this.deltaTimeMultiplier = 1;
+        this.deltaTimeMultiplier = 1; // Used to fuck up the game.
 
         // Set variables
         if (!this.gameSettings) this.gameSettings = {
@@ -23,19 +23,21 @@ class Game {
             defaultHealth: 50, // Default health
             minSpeed: 0.5, // Modifier: Speed
             maxSpeed: 2, // Modifier: Speed
-            speedRound: 0.05, // TODO
-            maxScrollSpeed: 40,
-            minScrollSpeed: 5,
-            scrollSpeedRound: 1, // TODO
+            speedRound: 0.05, // Round speed to nearest 0.05
+            maxScrollSpeed: 40, // Maximum scroll speed
+            minScrollSpeed: 5, // Minimum scroll speed
+            scrollSpeedRound: 1, // Round scroll speed to nearest 1
             multiplierChange: 1000, // Double the multiplier every x points
             maxAudio: 10, // Max amount of audios that can play at once
             defaultScrollSpeed: 20,
-            sliderComboIncrementInterval: 0, // TODO: its fucked
+            sliderPoints: true, // Should points be added at end of slider
+            sliderComboIncrementInterval: 0, // TODO: its fucked, i kinda want this but idk its jank af
             noteDirection: 1, // 1: DOWN, 2: UP
+            fpsUpdateInterval: 500, // How often FPS should be updated
         };
 
-        this.scrollSpeed = (this.user.settings.scrollSpeed || this.level.scrollSpeed) ? Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, this.user.settings.scrollSpeed || this.level.scrollSpeed)) : this.gameSettings.defaultScrollSpeed;
-        this.speed = this.user.modifiers.speed ? Math.max(this.gameSettings.minSpeed, Math.min(this.gameSettings.maxSpeed, this.user.modifiers.speed)) : 1;
+        this.scrollSpeed = Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, Math.round((this.user.settings.scrollSpeed || (this.user.settings.forceScrollSpeed ? this.level.scrollSpeed : 0) || this.gameSettings.defaultScrollSpeed) / this.gameSettings.scrollSpeedRound) * this.gameSettings.scrollSpeedRound));
+        this.speed = this.user.modifiers.speed ? Math.max(this.gameSettings.minSpeed, Math.min(this.gameSettings.maxSpeed, Math.round(this.user.modifiers.speed / this.gameSettings.speedRound) * this.gameSettings.speedRound)) : 1;
 
         this.notesReady = null;
         this.startTime = null;
@@ -53,15 +55,15 @@ class Game {
         this.slidersFinished = 0;
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
-        this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder to get depending on noteMoveAmount (scroll speed)
+        this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder depending on noteMoveAmount (scroll speed) // TODO (maybe???): change depending on note size?
         this.fpsHistory = [];
 
         this.gameSettings.points = [
-            { distance: 40 * this.pointDistanceMultiplier, points: 300 },
-            { distance: 75 * this.pointDistanceMultiplier, points: 200 },
-            { distance: 125 * this.pointDistanceMultiplier, points: 100 },
-            { distance: 175 * this.pointDistanceMultiplier, points: 50 },
-            { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true },
+            { distance: 40 * this.pointDistanceMultiplier, points: 300 }, // Good 👍👍
+            { distance: 75 * this.pointDistanceMultiplier, points: 200 }, // Alright
+            { distance: 125 * this.pointDistanceMultiplier, points: 100 }, // Meh
+            { distance: 175 * this.pointDistanceMultiplier, points: 50 }, // SHIT
+            { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true }, // this one is genuinely hard to get
         ];
 
         this.pointRange = Math.max(...this.gameSettings.points.map(i => i.distance));
@@ -111,7 +113,6 @@ class Game {
             this.elements.lanes.appendChild(laneElement);
 
             this.lanes.push({ elements: { lane: laneElement, notes: notesElement, key: keyElement }, notesSpawned: 0, keyPressed: false, notes: new Set() });
-            // this.lanes.push({ elements: { lane: laneElement, notes: notesElement, key: keyElement }, notesSpawned: 0, keyPressed: false, notes: [] });
         }
 
         // TODO: create the shit like accuracy display etc
@@ -219,7 +220,7 @@ class Game {
                     if (this.gameSettings.logFps) console.log("FPS:", fps);
                     this.call("onFpsUpdate", fps);
                     this.fpsHistory = [];
-                }, 1000);
+                }, this.gameSettings.fpsUpdateInterval);
 
                 this.startTime = Date.now();
                 this.running = true;
@@ -389,9 +390,9 @@ class Game {
     getActualTop(note, useHeight) {
         return this.gameSettings.noteDirection == 1 ?
             note.top - (useHeight ? note.height : note.normalHeight) :
-        this.gameSettings.noteDirection == 2 ?
-            note.top :
-        null;
+            this.gameSettings.noteDirection == 2 ?
+                note.top :
+                null;
     }
 
     getNewNotePos(note, deltaTime) {
@@ -568,9 +569,9 @@ class Game {
             // Force onto key
             closestNote.top = this.gameSettings.noteDirection == 1 ?
                 keyTop + closestNote.normalHeight :
-            this.gameSettings.noteDirection == 2 ?
-                keyTop :
-            null;
+                this.gameSettings.noteDirection == 2 ?
+                    keyTop :
+                    null;
             closestNote.element.style.top = `${closestNote.top}px`;
             // Change note height depending on the distance when pressed
             closestNote.height += Math.abs(closestNoteTop - keyTop) > Math.abs(keyTop - closestNoteTop) ? closestNoteTop - keyTop : keyTop - closestNoteTop;
@@ -583,30 +584,33 @@ class Game {
         if (!foundNote) return;
         if (foundNote.isSlider) {
             foundNote.holding = false;
-            const noteDistance = this.getNoteDistance(lane, foundNote, true);
-            if (noteDistance > this.pointRange) {
-                // Miss if still too far from end
-                foundNote.finished = true;
-                return this.miss();
+
+            if (this.gameSettings.sliderPoints) {
+                const noteDistance = this.getNoteDistance(lane, foundNote, true);
+                if (noteDistance > this.pointRange) {
+                    // Miss if still too far from end
+                    foundNote.finished = true;
+                    return this.miss();
+                }
+
+                const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
+
+                this.slidersFinished++;
+
+                if (pointsToAdd.isBadHit) {
+                    this.playSfx("bad-hit");
+                    this.updateCombo(0);
+                    this.badHits++;
+                    this.health = Math.min(0, this.health - 1);
+                } else {
+                    this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
+                }
+
+                this.setHitScore(pointsToAdd.points);
+                this.scoreNoMultiplier += pointsToAdd.points;
+                this.score += pointsToAdd.points * this.multiplier;
+                this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
             }
-
-            const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
-
-            this.slidersFinished++;
-
-            if (pointsToAdd.isBadHit) {
-                this.playSfx("bad-hit");
-                this.updateCombo(0);
-                this.badHits++;
-                this.health = Math.min(0, this.health - 1);
-            } else {
-                this.health = Math.min(this.gameSettings.maxHealth, this.health + 1);
-            }
-
-            this.setHitScore(pointsToAdd.points);
-            this.scoreNoMultiplier += pointsToAdd.points;
-            this.score += pointsToAdd.points * this.multiplier;
-            this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
         }
         this.removeNote(lane, foundNote);
     }
@@ -657,14 +661,16 @@ class Game {
 
     // Events
     onKeyDown = (ev) => {
+        // TODO: seperate into key-4-2 or something similar instead of arrays, also we obviously want more stuff here
         const index = this.user.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
         if (index >= 0 && !this.lanes[index].keyPressed) {
             this.lanes[index].keyPressed = true;
             this.onKeyPress(index);
         }
     }
-
+    
     onKeyUp = (ev) => {
+        // TODO: seperate into key-4-2 or something similar instead of arrays, also we obviously want more stuff here
         const index = this.user.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);
         if (index >= 0 && this.lanes[index].keyPressed) {
             this.lanes[index].keyPressed = false;

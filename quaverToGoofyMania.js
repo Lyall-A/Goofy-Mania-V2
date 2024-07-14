@@ -41,7 +41,7 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
         const timingPoints = parsedQuaverLevel.TimingPoints;
         const hitObjects = parsedQuaverLevel.HitObjects;
         
-        const bpm = timingPoints[0].Bpm; // TODO: probably bad
+        const bpm = timingPoints[0].Bpm;
         
         const audioFilePath = path.join(quaverMapPath, audioFile);
         const backgroundFilePath = path.join(quaverMapPath, backgroundFile);
@@ -60,7 +60,6 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
         map.offset = 0;
         
         map.levels.push({
-            scrollSpeed: 17, // TODO...
             name: difficultyName,
             keys,
             file: gmlFileName

@@ -15,7 +15,13 @@ const defaultSettings = {
     musicVolume: 100,
     sfxVolume: 50,
     keybinds: {
+        "skip": " ",
+        "1-keys": "g".split(""),
+        "2-keys": "gh".split(""),
+        "3-keys": "f h".split(""),
         "4-keys": "dfjk".split(""),
+        "5-keys": "df jk".split(""),
+        "6-keys": "sdfjkl".split(""),
         "7-keys": "sdf jkl".split("")
     },
     repositories: [

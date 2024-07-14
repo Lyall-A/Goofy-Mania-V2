@@ -1,1 +1,1 @@
-{"audio":{"file":"audio.mp3"},"cover":{"file":null},"background":{"file":"bg.jpg"},"name":"Kyu-kurarin (7_7 bootleg)","artist":"Iyowa feat. KAFU","mappers":[{"name":"JachinisAir"}],"offset":0,"bpm":252,"levels":[{"scrollSpeed":17,"name":"cute + funny = ???","keys":4,"file":"130826.gml"}]}
+{"audio":{"file":"audio.mp3"},"cover":{"file":null},"background":{"file":"bg.jpg"},"name":"Kyu-kurarin (7_7 bootleg)","artist":"Iyowa feat. KAFU","mappers":[{"name":"JachinisAir"}],"offset":0,"bpm":252,"levels":[{"name":"cute + funny = ???","keys":4,"file":"130826.gml"}]}

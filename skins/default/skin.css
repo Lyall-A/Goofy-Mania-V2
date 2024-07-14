@@ -48,12 +48,13 @@ body {
 }
 
 #game {
-    --lane-width: calc(var(--game-width) / 100 * 6); /* x% of game width */
+    --lane-width: max(50px, calc(var(--game-width) / 100 * 6)); /* x% of game width */
     --lane-margin: calc(var(--game-width) / 100 * 0.25);
     --key-border-width: calc(var(--game-width) / 100 * 0.25);
     --hit-score-height: calc(var(--game-height) / 100 * 7);
-    --accuracy-right: calc(var(--game-width) / 100 * 0.5);
-    --accuracy-top: var(--accuracy-right);
+    /* --accuracy-right: calc(var(--game-width) / 100 * 0.5); */
+    /* --accuracy-top: var(--accuracy-right); */
+    --accuracy-bottom: calc(var(--game-height) / 100 * 70);
     --combo-bottom: calc(var(--game-height) / 100 * 60);
     --hit-score-bottom: calc(var(--game-height) / 100 * 50);
     font-size: calc(var(--game-width) / 100 * 2.5);
