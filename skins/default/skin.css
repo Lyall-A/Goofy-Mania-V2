@@ -23,6 +23,15 @@ body {
     background-color: rgb(83, 83, 83);
     margin: 10px;
     overflow: hidden;
+    transition: transform 0.15s ease-in;
+}
+
+.map-name { font-size: 1.3em; }
+.map-artist { font-size: 1.15em; }
+
+.map:hover, .level:hover {
+    cursor: pointer;
+    transform: scale(1.05);
 }
 
 .map div, .level div {

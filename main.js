@@ -94,33 +94,38 @@ const modifiers = {};
 
         if (map.cover?.file || map.background?.file) imgElement.src = encodeURIComponent(`${map.fullPath}/${map.cover?.file || map.background?.file}`);
         nameElement.innerHTML = map.name;
+        nameElement.classList.add("map-name");
         artistElement.innerHTML = map.artist;
+        artistElement.classList.add("map-artist");
         mappersElement.innerHTML = map.mappers.map(i => i.name).join(", ");
-
+        mappersElement.classList.add("map-mappers");
+        
         mapElement.appendChild(imgElement);
         mapElement.appendChild(nameElement);
         mapElement.appendChild(artistElement);
         mapElement.appendChild(mappersElement);
-
+        
         mapsElement.appendChild(mapElement);
-
+        
     });
     mapSelectElement.style.display = "";
 })();
 
 function showLevels(map) {
     mapSelectElement.style.display = "none";
-
+    
     map.levels.forEach(level => {
         const levelElement = document.createElement("div");
         levelElement.classList.add("level");
         levelElement.onclick = () => startGame(map, level);
-
+        
         const nameElement = document.createElement("div");
         const keysElement = document.createElement("div");
-
+        
         nameElement.innerHTML = level.name;
+        nameElement.classList.add("level-name");
         keysElement.innerHTML = level.keys;
+        keysElement.classList.add("level-keys");
 
         levelElement.appendChild(nameElement);
         levelElement.appendChild(keysElement);
