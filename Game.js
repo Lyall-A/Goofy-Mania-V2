@@ -34,6 +34,7 @@ class Game {
             sliderComboIncrementInterval: 0, // TODO: its fucked, i kinda want this but idk its jank af
             noteDirection: 1, // 1: DOWN, 2: UP
             fpsUpdateInterval: 500, // How often FPS should be updated
+            minStartDelay: 2500
         };
 
         this.scrollSpeed = Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, Math.round((this.user.settings.scrollSpeed || (this.user.settings.forceScrollSpeed ? this.level.scrollSpeed : 0) || this.gameSettings.defaultScrollSpeed) / this.gameSettings.scrollSpeedRound) * this.gameSettings.scrollSpeedRound));
@@ -43,6 +44,8 @@ class Game {
         this.startTime = null;
         this.running = null;
         this.notesToSpawn = [...this.level.data];
+        this.startDelay = Math.max(0, this.gameSettings.minStartDelay - (this.beatToMs(this.notesToSpawn[0][2] / this.speed) + this.map.offset));
+        this.offset = this.map.offset + this.startDelay;
         this.runningTime = 0;
         this.lanes = [];
         this.intervals = [];
@@ -205,15 +208,18 @@ class Game {
             // START GAME LOGIC
             if (this.running == null) {
                 // First run
-                this.gameTimeout(() => this.notesReady = true, this.map.offset);
                 this.gameTimeout(() => {
-                    this.music = this.playAudio(this.urls["music"], {
-                        volume: this.user.settings.musicVolume,
-                        playbackRate: this.speed, // Modifier: Speed
-                        changePitch: this.user.modifiers.pitch // Modifier: Pitch
-                    });
-                    this.music.onended = () => this.stop();
-                }, this.getMsToKey());
+                    this.gameTimeout(() => this.notesReady = true, this.map.offset); // Start notes
+                    this.gameTimeout(() => {
+                        // Start audio
+                        this.music = this.playAudio(this.urls["music"], {
+                            volume: this.user.settings.musicVolume,
+                            playbackRate: this.speed, // Modifier: Speed
+                            changePitch: this.user.modifiers.pitch // Modifier: Pitch
+                        });
+                        this.music.onended = () => this.stop();
+                    }, this.getMsToKey() + (this.user.settings.audioOffset || 0));
+                }, this.startDelay);
 
                 if (this.gameSettings.captureFps) this.gameInterval(() => {
                     const fps = Math.round((this.fpsHistory.reduce((prev, curr) => prev + curr) / this.fpsHistory.length) || 0)
@@ -230,7 +236,7 @@ class Game {
             if (this.notesReady) {
                 for (const i in { ...this.notesToSpawn }) { // the fuck?
                     const noteToSpawn = this.notesToSpawn[0];
-                    if (this.beatToMs(noteToSpawn[2] / this.speed) + this.map.offset >= this.runningTime) break; // TODO: is this right?
+                    if (this.beatToMs(noteToSpawn[2] / this.speed) + this.offset >= this.runningTime) break; // TODO: is this right?
                     const spawnedNote = this.spawnNote(noteToSpawn[0], this.user.modifiers.noSliders ? 0 : noteToSpawn[1]); // Modifier: No Sliders
                     this.notesToSpawn.shift();
 
