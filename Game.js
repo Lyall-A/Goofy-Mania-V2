@@ -34,7 +34,9 @@ class Game {
             sliderComboIncrementInterval: 0, // TODO: its fucked, i kinda want this but idk its jank af
             noteDirection: 1, // 1: DOWN, 2: UP
             fpsUpdateInterval: 500, // How often FPS should be updated
-            minStartDelay: 2500
+            minStartDelay: 2500,
+            minWidth: 720,
+            minHeight: 720,
         };
 
         this.scrollSpeed = Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, Math.round((this.user.settings.scrollSpeed || (this.user.settings.forceScrollSpeed ? this.level.scrollSpeed : 0) || this.gameSettings.defaultScrollSpeed) / this.gameSettings.scrollSpeedRound) * this.gameSettings.scrollSpeedRound));
@@ -58,13 +60,14 @@ class Game {
         this.slidersFinished = 0;
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
+        // this.noteMoveAmount = (this.scrollSpeed / 10); // How much the note should move down each frame
         this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder depending on noteMoveAmount (scroll speed) // TODO (maybe???): change depending on note size?
         this.fpsHistory = [];
 
         this.gameSettings.points = [
             { distance: 40 * this.pointDistanceMultiplier, points: 300 }, // Good 👍👍
-            { distance: 75 * this.pointDistanceMultiplier, points: 200 }, // Alright
-            { distance: 125 * this.pointDistanceMultiplier, points: 100 }, // Meh
+            { distance: 100 * this.pointDistanceMultiplier, points: 200 }, // Alright
+            { distance: 150 * this.pointDistanceMultiplier, points: 100 }, // Meh
             { distance: 175 * this.pointDistanceMultiplier, points: 50 }, // SHIT
             { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true }, // this one is genuinely hard to get
         ];
@@ -83,8 +86,8 @@ class Game {
         this.scoreNoMultiplier = 0;
 
         // Set CSS variables
-        this.game.style.setProperty("--game-width", `${this.game.offsetWidth}px`);
-        this.game.style.setProperty("--game-height", `${this.game.offsetHeight}px`);
+        this.game.style.setProperty("--game-width", `${Math.max(this.gameSettings.minWidth, this.game.offsetWidth)}px`);
+        this.game.style.setProperty("--game-height", `${Math.max(this.gameSettings.minHeight, this.game.offsetHeight)}px`);
 
         // Change CSS
         this.game.style.width = "var(--game-width)";
