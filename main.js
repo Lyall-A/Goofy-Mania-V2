@@ -92,7 +92,7 @@ const modifiers = {};
         const artistElement = document.createElement("div");
         const mappersElement = document.createElement("div");
 
-        if (map.cover?.file || map.background?.file) imgElement.src = encodeURIComponent(`${map.fullPath}/${map.cover?.file || map.background?.file}`);
+        if (map.cover?.file || map.background?.file) imgElement.src = encodePath(`${map.fullPath}/${map.cover?.file || map.background?.file}`);
         nameElement.innerHTML = map.name;
         nameElement.classList.add("map-name");
         artistElement.innerHTML = map.artist;
@@ -216,12 +216,16 @@ function loadSkin(skin) {
 }
 
 async function getData(path, obj, type) {
-    return obj.data || obj.file ? await fetch(encodeURIComponent(`${path ? `${path}/` : ""}${obj.file}`)).then(i => i[type || "blob"]()) : null;
+    return obj.data || obj.file ? await fetch(encodePath(`${path ? `${path}/` : ""}${obj.file}`)).then(i => i[type || "blob"]()) : null;
 }
 
 function setLoadingText(text = "") {
     loadingTextElement.innerHTML = text;
     if (!text) loadingTextElement.style.display = "none"; else loadingTextElement.style.display = "";
+}
+
+function encodePath(path) {
+    return path.split("/").map(encodeURIComponent).join("/");
 }
 
 // Electron stuff

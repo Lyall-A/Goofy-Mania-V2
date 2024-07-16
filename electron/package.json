@@ -1,0 +1,14 @@
+{
+  "name": "goofy-mania-v2",
+  "description": "A very original rhythm game",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "electron": "^31.2.1"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Lyall",
+  "license": "ISC"
+}
