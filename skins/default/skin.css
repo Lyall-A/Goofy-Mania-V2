@@ -121,6 +121,8 @@ body {
 }
 .hit-score * { width: 100%; height: 100%; }
 @keyframes hit-score { 100% { transform: scale(var(--hit-score-after-scale)); } }
+/* .hit-score { transition: rotate 0.1s; } */
+/* @keyframes hit-score { 100% { transform: scaleX(4); rotate: 360deg; } } */
 
 .lanes {
     display: flex;
