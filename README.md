@@ -6,6 +6,16 @@
 * `.gms`: Goofy Mania Skin
 * `.gmr`: Goofy Mania Repository
 
-**.gmr**
+## File Structure (TODO)
+**NOTE:** all files are formatted in JSON
 
-Array of GMM object's with an extra `path` entry with the value of the map directory
+## TODO list
+* Allow custom hit sounds for each note
+* Setting to change note direction
+* Usable UI/menu
+* Add Electron support with Discord Game SDK
+* OSU map converter
+* Editor?
+
+## KNOWN ISSUES
+* Slider height/Y can be very slightly off by a random amount of pixels, dunno why

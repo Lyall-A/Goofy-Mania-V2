@@ -61,11 +61,11 @@ class Game {
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         // this.noteMoveAmount = (this.scrollSpeed / 10); // How much the note should move down each frame
-        this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder depending on noteMoveAmount (scroll speed) // TODO (maybe???): change depending on note size?
+        this.pointDistanceMultiplier = this.noteMoveAmount / 1.5; // This is to make points easier/harder depending on noteMoveAmount (scroll speed) // TODO (maybe???): change depending on note size?
         this.fpsHistory = [];
 
         this.gameSettings.points = [
-            { distance: 40 * this.pointDistanceMultiplier, points: 300 }, // Good 👍👍
+            { distance: 50 * this.pointDistanceMultiplier, points: 300 }, // Good 👍👍
             { distance: 100 * this.pointDistanceMultiplier, points: 200 }, // Alright
             { distance: 150 * this.pointDistanceMultiplier, points: 100 }, // Meh
             { distance: 175 * this.pointDistanceMultiplier, points: 50 }, // SHIT
@@ -181,7 +181,7 @@ class Game {
         if (this.running) throw new Error("Already started!");
 
         // Game loop
-        this.gameLoop((deltaTime, loop, fps) => {
+        this.gameLoop((deltaTime, loop, fps, time) => {
             deltaTime = deltaTime * this.deltaTimeMultiplier;
             this.runningTime += deltaTime;
 
@@ -268,7 +268,7 @@ class Game {
                         if (note.holding) {
                             if (note.height > note.normalHeight) {
                                 // Simulate move down
-                                note.height = Math.max(note.normalHeight, note.height - this.noteMoveAmount * deltaTime);
+                                note.height = Math.max(note.normalHeight, note.height - (this.noteMoveAmount * deltaTime));
                                 note.element.style.height = `${Math.round(note.height)}px`;
                                 const date = Date.now();
                                 if (date > note.holdStart + this.gameSettings.sliderComboIncrementInterval && (date - note.holdStart) % this.gameSettings.sliderComboIncrementInterval <= deltaTime) this.updateCombo(); // TODO: pretty inaccurate and broken
@@ -287,6 +287,7 @@ class Game {
                             // Move slider
                             this.getNewNotePos(note, deltaTime);
                             note.element.style.top = `${Math.round(note.top)}px`; // Set top
+                            // console.log(note.top)
 
                             if (note.passedKey && this.getNoteDistance(lane, note) > this.pointRange && !note.finished) {
                                 // Missed slider
@@ -393,7 +394,7 @@ class Game {
         // lane.notes.push(note);
         lane.notes.add(note);
         noteElement.style.height = `${Math.round(height)}px`;
-        console.log(laneNum, height, top, Date.now());
+        // console.log(laneNum, height, top, Date.now());  
         return note;
     }
 
@@ -409,13 +410,14 @@ class Game {
         const newPos = {
             x: note.offsetLeft,
             y: this.gameSettings.noteDirection == 1 ?
-                note.top + this.noteMoveAmount * deltaTime :
+                note.top + (this.noteMoveAmount * deltaTime):
                 this.gameSettings.noteDirection == 2 ?
-                    note.top - this.noteMoveAmount * deltaTime :
+                    note.top - (this.noteMoveAmount * deltaTime):
                     null
         };
         // note.left = newPos.x;
         note.top = newPos.y;
+        return newPos;
     }
 
     removeNote(lane, note) {
@@ -573,8 +575,8 @@ class Game {
         this.scoreNoMultiplier += pointsToAdd.points;
         this.score += pointsToAdd.points * this.multiplier;
         this.givenPoints[pointsToAdd.points] = (this.givenPoints[pointsToAdd.points] || 0) + 1;
+        closestNote.holding = true;
         if (closestNote.isSlider) {
-            closestNote.holding = true;
             closestNote.holdStart = Date.now(); // For combo increments while holding
             // Force onto key
             closestNote.top = this.gameSettings.noteDirection == 1 ?
@@ -592,9 +594,8 @@ class Game {
     releaseNote(lane) {
         const foundNote = lane.notes.values().find(i => i.holding);
         if (!foundNote) return;
+        foundNote.holding = false;
         if (foundNote.isSlider) {
-            foundNote.holding = false;
-
             if (this.gameSettings.sliderPoints) {
                 const noteDistance = this.getNoteDistance(lane, foundNote, true);
                 if (noteDistance > this.pointRange) {
@@ -635,7 +636,7 @@ class Game {
             if (deltaTime) fps = Math.round(1000 / deltaTime);
             prevTime = time;
 
-            callback(deltaTime, () => requestAnimationFrame(loop), fps);
+            callback(deltaTime, () => requestAnimationFrame(loop), fps, time);
         }
 
         requestAnimationFrame(loop);
