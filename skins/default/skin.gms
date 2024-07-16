@@ -15,9 +15,8 @@
         },
         {
             "300": {
-                "type": "image",
-                "hideAfter": 150,
-                "file": "perfect.png"
+                "type": "none",
+                "hideAfter": 0
             },
             "200": {
                 "type": "image",

@@ -392,7 +392,8 @@ class Game {
         const note = { top, normalHeight: noteElement.offsetHeight, height, element: noteElement, id: lane.notesSpawned, isSlider: sliderHeight ? true : false, holding: false, holdStart: null };
         // lane.notes.push(note);
         lane.notes.add(note);
-        noteElement.style.height = `${height}px`;
+        noteElement.style.height = `${Math.round(height)}px`;
+        console.log(laneNum, height, top, Date.now());
         return note;
     }
 
@@ -584,7 +585,7 @@ class Game {
             closestNote.element.style.top = `${closestNote.top}px`;
             // Change note height depending on the distance when pressed
             closestNote.height += Math.abs(closestNoteTop - keyTop) > Math.abs(keyTop - closestNoteTop) ? closestNoteTop - keyTop : keyTop - closestNoteTop;
-            closestNote.element.style.height = `${closestNote.height}px`;
+            closestNote.element.style.height = `${Math.round(closestNote.height)}px`;
         } else this.removeNote(lane, closestNote);
     }
 
