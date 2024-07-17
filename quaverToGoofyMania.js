@@ -82,7 +82,7 @@ function msToBeat(ms, bpm) {
 
 function parseQuaverLevel(level) {
     const parsed = { };
-    const splitNewLines = level.split("\r\n").filter(i => i);
+    const splitNewLines = level.replace(/\r/g, "").split("\n").filter(i => i);
     let lastObject;
     let lastArray;
     splitNewLines.forEach(line => {

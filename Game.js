@@ -35,8 +35,8 @@ class Game {
             noteDirection: 1, // 1: DOWN, 2: UP
             fpsUpdateInterval: 500, // How often FPS should be updated
             minStartDelay: 2500,
-            minWidth: 720,
-            minHeight: 720,
+            minWidth: 400,
+            minHeight: 400,
         };
 
         this.scrollSpeed = Math.max(this.gameSettings.minScrollSpeed, Math.min(this.gameSettings.maxScrollSpeed, Math.round((this.user.settings.scrollSpeed || (this.user.settings.forceScrollSpeed ? this.level.scrollSpeed : 0) || this.gameSettings.defaultScrollSpeed) / this.gameSettings.scrollSpeedRound) * this.gameSettings.scrollSpeedRound));
