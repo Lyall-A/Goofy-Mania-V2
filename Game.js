@@ -505,7 +505,8 @@ class Game {
         if (options.changePitch) audio.preservesPitch = false;
         audio.onpause = e => audio.ended ? null : audio.play();
         audio.onended = () => this.audiosPlaying--;
-        audio.onloadedmetadata = () => audio.play();
+        // audio.onloadedmetadata = () => audio.play();
+        audio.onloadeddata = () => audio.play();
         return audio;
     }
 
