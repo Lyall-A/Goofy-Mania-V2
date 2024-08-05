@@ -8,7 +8,7 @@ class Game {
         this.gameSettings = gameSettings;
     }
 
-    init() {
+    async init() {
         if (this.hasInit) throw new Error("Already initialized!");
 
         this.deltaTimeMultiplier = 1; // Used to fuck up the game.
@@ -54,6 +54,10 @@ class Game {
         this.timeouts = [];
         this.urls = {};
         this.elements = {};
+        this.cache = {
+            audio: new Map()
+            // TODO: images, etc
+        },
         this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesHit = 0; // Total amount of notes hit
@@ -144,12 +148,19 @@ class Game {
         this.elements.health = document.createElement("div");
         this.elements.health.classList.add("health");
 
+        // Create audio context
+        this.audioContext = new (window.AudioContext || window.webkitAudioCOntext)();
+
         // Create URL's (TODO)
         // SFX
-        this.createUrl("hit", this.user.skin.sfx["hit"]?.data);
-        this.createUrl("combo-break", this.user.skin.sfx["combo-break"]?.data);
-        this.createUrl("bad-hit", this.user.skin.sfx["bad-hit"]?.data);
-        this.createUrl("music", this.map.audio.data);
+        // this.createUrl("hit", this.user.skin.sfx["hit"]?.data);
+        // this.createUrl("combo-break", this.user.skin.sfx["combo-break"]?.data);
+        // this.createUrl("bad-hit", this.user.skin.sfx["bad-hit"]?.data);
+        // this.createUrl("music", this.map.audio.data);
+        await this.preloadAudio("hit", this.user.skin.sfx["hit"]?.data);
+        await this.preloadAudio("combo-break", this.user.skin.sfx["combo-break"]?.data);
+        await this.preloadAudio("bad-hit", this.user.skin.sfx["bad-hit"]?.data);
+        await this.preloadAudio("music", this.map.audio.data);
         // Object.entries(this.user.skin.sfx).filter(i => i[1].data).forEach(([key, value]) => this.createUrl(key, value.data));
         // Assets
         this.createUrl("background", this.map.background.data);
@@ -215,7 +226,7 @@ class Game {
                     this.gameTimeout(() => this.notesReady = true, this.map.offset); // Start notes
                     this.gameTimeout(() => {
                         // Start audio
-                        this.music = this.playAudio(this.urls["music"], {
+                        this.music = this.playAudio("music", {
                             volume: this.user.settings.musicVolume,
                             playbackRate: this.speed, // Modifier: Speed
                             changePitch: this.user.modifiers.pitch // Modifier: Pitch
@@ -410,9 +421,9 @@ class Game {
         const newPos = {
             x: note.offsetLeft,
             y: this.gameSettings.noteDirection == 1 ?
-                note.top + (this.noteMoveAmount * deltaTime):
+                note.top + (this.noteMoveAmount * deltaTime) :
                 this.gameSettings.noteDirection == 2 ?
-                    note.top - (this.noteMoveAmount * deltaTime):
+                    note.top - (this.noteMoveAmount * deltaTime) :
                     null
         };
         // note.left = newPos.x;
@@ -492,23 +503,89 @@ class Game {
     }
 
     playSfx(sfx) {
-        if (!this.urls[sfx]) return;
-        this.playAudio(this.urls[sfx], { volume: this.user.settings.sfxVolume });
+        this.playAudio(sfx, { volume: this.user.settings.sfxVolume, noSkip: true });
     }
 
-    playAudio(url, options = {}) {
-        if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
-        const audio = new Audio(url);
-        this.audiosPlaying++;
-        audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
-        if (options.playbackRate) audio.playbackRate = options.playbackRate;
-        if (options.changePitch) audio.preservesPitch = false;
-        audio.onpause = e => audio.ended ? null : audio.play();
-        audio.onended = () => this.audiosPlaying--;
-        // audio.onloadedmetadata = () => audio.play();
-        audio.onloadeddata = () => audio.play();
-        return audio;
+    preloadAudio(name, data) {
+        if (this.cache.audio.has(name)) return Promise.resolve(this.cache.audio.get(name));
+
+        if (data) {
+            this.audioContext.decodeAudioData(data)
+                .then(i => {
+                    this.cache.audio.set(name, i);
+                    return i;
+                });
+        } else {
+            return fetch(name)
+                .then(i => i.arrayBuffer())
+                .then(i => this.audioContext.decodeAudioData(i))
+                .then(i => {
+                    this.cache.audio.set(name, i);
+                    return i;
+                });
+        }
     }
+
+    async playAudio(name, options, data) {
+        // TODO: No pitch adjustment
+        if (!name || this.audiosPlaying >= this.gameSettings.maxAudio) return;
+
+        const createTime = Date.now();
+
+        const buffer = await this.preloadAudio(name, data);
+
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+
+        if (options.playbackRate) source.playbackRate.value = options.playbackRate;
+
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.value = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        this.audiosPlaying++;
+
+        if (!options.allowPause) {
+            source.onended = () => {
+                this.audiosPlaying--;
+                source.disconnect();
+                gainNode.disconnect();
+            };
+        }
+
+        source.start(0, options.noSkip ? 0 : (Date.now() - createTime) / 1000);
+
+        source.onended = () => {
+            this.audiosPlaying--;
+            source.disconnect();
+            gainNode.disconnect();
+        };
+
+        return {
+            source,
+            gainNode
+        }
+    }
+
+    // playAudio(url, options = {}) {
+    //     if (!url || this.audiosPlaying >= this.gameSettings.maxAudio) return;
+    //     const audio = new Audio(url);
+    //     let createTime = Date.now();
+    //     this.audiosPlaying++;
+    //     audio.volume = (this.user.settings.masterVolume / 100) * (options.volume != undefined ? options.volume / 100 : 1);
+    //     if (options.playbackRate) audio.playbackRate = options.playbackRate;
+    //     if (options.changePitch) audio.preservesPitch = false;
+    //     if (!options.allowPause) audio.onpause = e => audio.ended ? null : audio.play();
+    //     audio.onended = () => this.audiosPlaying--;
+    //     // audio.onloadedmetadata = () => audio.play();
+    //     audio.onloadeddata = () => audio.play().then(() => {
+    //         if (!options.noSkip) {
+    //             audio.currentTime = (Date.now() - createTime) / 1000;
+    //         }
+    //     });
+    //     return audio;
+    // }
 
     onKeyPress(laneIndex) {
         const lane = this.lanes[laneIndex];
@@ -680,7 +757,7 @@ class Game {
             this.onKeyPress(index);
         }
     }
-    
+
     onKeyUp = (ev) => {
         // TODO: seperate into key-4-2 or something similar instead of arrays, also we obviously want more stuff here
         const index = this.user.settings.keybinds[`${this.level.keys}-keys`]?.findIndex(i => i == ev.key);

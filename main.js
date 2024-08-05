@@ -152,7 +152,7 @@ async function startGame(map, level) {
     gameElement.style.display = "";
     game = new Game(gameElement, map, level, user);
     setLoadingText();
-    game.init();
+    await game.init();
     game.start();
     game.on("onFpsUpdate", fps => fpsElement.innerHTML = `FPS: ${fps}`);
     return game;
@@ -179,7 +179,7 @@ async function getLevelData(map, level) {
 }
 
 async function getMapData(map) {
-    map.audio.data = await getData(map.fullPath, map.audio);
+    map.audio.data = await getData(map.fullPath, map.audio, "arrayBuffer");
     map.cover.data = await getData(map.fullPath, map.cover);
     map.background.data = await getData(map.fullPath, map.background);
 
@@ -190,7 +190,7 @@ async function getSkinData(skinPath) {
     const skin = await fetch(`${skinPath}/skin.gms`).then(i => i.json());
 
     skin.style.data = await getData(skinPath, skin.style);
-    for (const [key, value] of Object.entries(skin.sfx || { })) value.data = await getData(skinPath, value);
+    for (const [key, value] of Object.entries(skin.sfx || { })) value.data = await getData(skinPath, value, "arrayBuffer");
     for (const [key, value] of Object.entries(skin.hitScores?.[1] || { })) value.data = await getData(skinPath, value);
     if (skin.hitScores?.[0]) skin.hitScores[0].data = await getData(skinPath, skin.hitScores[0]);
 
