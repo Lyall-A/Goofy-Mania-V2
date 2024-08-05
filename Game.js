@@ -58,7 +58,7 @@ class Game {
             audio: new Map()
             // TODO: images, etc
         },
-        this.hitScores = this.user.skin.hitScores[1];
+            this.hitScores = this.user.skin.hitScores[1];
         this.defaultHitScore = this.user.skin.hitScores[0];
         this.notesHit = 0; // Total amount of notes hit
         this.slidersFinished = 0;
@@ -101,9 +101,9 @@ class Game {
         this.elements.game = document.createElement("div");
         this.elements.game.classList.add("game");
 
-        // Create background
-        this.elements.background = document.createElement("div");
-        this.elements.background.classList.add("background");
+        // Create background container
+        this.elements.backgroundContainer = document.createElement("div");
+        this.elements.backgroundContainer.classList.add("background-container");
 
         // Create lanes
         this.elements.lanes = document.createElement("div");
@@ -168,11 +168,18 @@ class Game {
         Object.entries(this.hitScores).filter(i => i[1].data).forEach(([key, value]) => this.createUrl(`${key}-hit-score`, value.data));
 
         // Set background
-        if (this.urls["background"]) this.elements.background.style.backgroundImage = `url("${this.urls["background"]}")`;
+        if (this.urls["background"]) {
+            const type = this.map.background.type == "video" ? "video" : "img";
+            const background = document.createElement(type);
+            background.classList.add("background");
+            background.classList.add(type);
+            background.src = this.urls["background"];
+            this.elements.backgroundContainer.appendChild(background);
+        }
 
         // Append to game
         this.game.appendChild(this.elements.lanes);
-        this.game.appendChild(this.elements.background);
+        this.game.appendChild(this.elements.backgroundContainer);
         this.game.appendChild(this.elements.accuracy);
         this.game.appendChild(this.elements.hitScore);
         this.game.appendChild(this.elements.combo);
@@ -226,12 +233,14 @@ class Game {
                     this.gameTimeout(() => this.notesReady = true, this.map.offset); // Start notes
                     this.gameTimeout(() => {
                         // Start audio
-                        this.music = this.playAudio("music", {
+                        this.playAudio("music", {
                             volume: this.user.settings.musicVolume,
                             playbackRate: this.speed, // Modifier: Speed
                             changePitch: this.user.modifiers.pitch // Modifier: Pitch
+                        }).then(music => {
+                            this.music = music;
+                            this.music.source.onended = () => this.stop();
                         });
-                        this.music.onended = () => this.stop();
                     }, this.getMsToKey() + (this.user.settings.audioOffset || 0));
                 }, this.startDelay);
 
@@ -363,10 +372,7 @@ class Game {
         }
 
         if (this.running) {
-            this.music.pause();
-            this.music.currentTime = 0;
-            this.music.src = "";
-            this.music.remove();
+            this.music.stop();
 
             // Stop game loop
             this.running = false;
@@ -510,7 +516,7 @@ class Game {
         if (this.cache.audio.has(name)) return Promise.resolve(this.cache.audio.get(name));
 
         if (data) {
-            this.audioContext.decodeAudioData(data)
+            return this.audioContext.decodeAudioData(data)
                 .then(i => {
                     this.cache.audio.set(name, i);
                     return i;
@@ -546,14 +552,6 @@ class Game {
 
         this.audiosPlaying++;
 
-        if (!options.allowPause) {
-            source.onended = () => {
-                this.audiosPlaying--;
-                source.disconnect();
-                gainNode.disconnect();
-            };
-        }
-
         source.start(0, options.noSkip ? 0 : (Date.now() - createTime) / 1000);
 
         source.onended = () => {
@@ -564,7 +562,13 @@ class Game {
 
         return {
             source,
-            gainNode
+            gainNode,
+            stop: () => {
+                source.stop();
+                this.audiosPlaying--;
+                source.disconnect();
+                gainNode.disconnect();
+            }
         }
     }
 
