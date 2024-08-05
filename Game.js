@@ -45,6 +45,7 @@ class Game {
         this.notesReady = null;
         this.startTime = null;
         this.running = null;
+        this.backgroundIsVideo = null;
         this.notesToSpawn = [...this.level.data];
         this.startDelay = Math.max(0, this.gameSettings.minStartDelay - (this.beatToMs(this.notesToSpawn[0][2] / this.speed) + this.map.offset));
         this.offset = this.map.offset + this.startDelay;
@@ -170,11 +171,24 @@ class Game {
         // Set background
         if (this.urls["background"]) {
             const type = this.map.background.type == "video" ? "video" : "img";
-            const background = document.createElement(type);
-            background.classList.add("background");
-            background.classList.add(type);
-            background.src = this.urls["background"];
-            this.elements.backgroundContainer.appendChild(background);
+            if (type == "video") {
+                this.backgroundIsVideo = true;
+                this.elements.background = document.createElement(type);
+                this.elements.background.classList.add("background");
+                this.elements.background.classList.add(type);
+                this.elements.background.src = this.urls["background"];
+                this.elements.background.muted = true;
+                this.elements.background.controls = false;
+                this.elements.background.playbackRate = this.speed;
+                this.elements.backgroundContainer.appendChild(this.elements.background);
+            } else {
+                this.backgroundIsVideo = false;
+                this.elements.background = document.createElement(type);
+                this.elements.background.classList.add("background");
+                this.elements.background.classList.add(type);
+                this.elements.background.src = this.urls["background"];
+                this.elements.backgroundContainer.appendChild(this.elements.background);
+            }
         }
 
         // Append to game
@@ -233,6 +247,7 @@ class Game {
                     this.gameTimeout(() => this.notesReady = true, this.map.offset); // Start notes
                     this.gameTimeout(() => {
                         // Start audio
+                        if (this.backgroundIsVideo) this.elements.background.play();
                         this.playAudio("music", {
                             volume: this.user.settings.musicVolume,
                             playbackRate: this.speed, // Modifier: Speed

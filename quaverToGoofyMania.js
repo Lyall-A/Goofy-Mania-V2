@@ -12,7 +12,7 @@ function quaverToGoofyMania(quaverMapPath, goofyManiaMapPath) {
     const map = {
         audio: { file: null },
         cover: { file: null },
-        background: { file: null },
+        background: { file: null, type: "image" },
         name: null,
         artist: null,
         mappers: [],
