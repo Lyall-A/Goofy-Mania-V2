@@ -689,7 +689,7 @@ class Game {
     }
 
     releaseNote(lane) {
-        const foundNote = lane.notes.values().find(i => i.holding);
+        const foundNote = [...lane.notes].find(i => i.holding);
         if (!foundNote) return;
         foundNote.holding = false;
         if (foundNote.isSlider) {

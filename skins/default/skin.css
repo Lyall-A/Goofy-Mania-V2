@@ -90,7 +90,6 @@ body {
     object-fit: cover;
     object-position: center;
     opacity: 70%;
-    /* filter: blur(5px); */
 }
 
 .accuracy, .combo, .hit-score {

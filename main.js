@@ -39,7 +39,9 @@ const repositories = [];
 // Variables
 const maps = [];
 let skin;
-const modifiers = {};
+const modifiers = {
+    auto: true
+};
 
 (async () => {
     // Set loading screen
