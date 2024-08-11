@@ -40,7 +40,8 @@ const repositories = [];
 const maps = [];
 let skin;
 const modifiers = {
-    auto: true
+    // auto: true,
+    // speed: 1.2
 };
 
 (async () => {

@@ -179,6 +179,7 @@ class Game {
                 this.elements.background.src = this.urls["background"];
                 this.elements.background.muted = true;
                 this.elements.background.controls = false;
+                this.elements.background.playsInline = true;
                 this.elements.background.playbackRate = this.speed;
                 this.elements.backgroundContainer.appendChild(this.elements.background);
             } else {
@@ -245,10 +246,13 @@ class Game {
                 // First run
                 this.gameTimeout(() => {
                     this.gameTimeout(() => this.notesReady = true, this.map.offset); // Start notes
-                    this.gameTimeout(() => {
+                    this.gameTimeout(async () => {
                         // Start audio
-                        if (this.backgroundIsVideo) this.elements.background.play();
-                        this.playAudio("music", {
+                        const startTime = Date.now();
+                        // if (this.backgroundIsVideo) this.elements.background.play();
+                        if (this.backgroundIsVideo) await this.elements.background.play();
+                        this.elements.background.currentTime = (Date.now() - startTime) / 1000;
+                        await this.playAudio("music", {
                             volume: this.user.settings.musicVolume,
                             playbackRate: this.speed, // Modifier: Speed
                             changePitch: this.user.modifiers.pitch // Modifier: Pitch
