@@ -66,18 +66,23 @@ class Game {
         this.audiosPlaying = 0; // Current amount of audios playing
         this.noteMoveAmount = (this.scrollSpeed / 10) * this.game.offsetHeight / 1000; // How much the note should move down each frame
         // this.noteMoveAmount = (this.scrollSpeed / 10); // How much the note should move down each frame
-        this.pointDistanceMultiplier = this.noteMoveAmount / 1.5; // This is to make points easier/harder depending on noteMoveAmount (scroll speed) // TODO (maybe???): change depending on note size?
+        this.pointDistanceMultiplier = this.noteMoveAmount / 2; // This is to make points easier/harder depending on noteMoveAmount (scroll speed) // TODO (maybe???): change depending on note size?
+        this.sliderPointDistanceMultiplier = this.noteMoveAmount / 1;
         this.fpsHistory = [];
 
         this.gameSettings.points = [
-            { distance: 50 * this.pointDistanceMultiplier, points: 300 }, // Good 👍👍
-            { distance: 100 * this.pointDistanceMultiplier, points: 200 }, // Alright
-            { distance: 150 * this.pointDistanceMultiplier, points: 100 }, // Meh
-            { distance: 175 * this.pointDistanceMultiplier, points: 50 }, // SHIT
-            { distance: 250 * this.pointDistanceMultiplier, points: 0, isBadHit: true }, // this one is genuinely hard to get
+            { distance: 50, points: 300 }, // Good 👍👍
+            { distance: 100, points: 200 }, // Alright
+            { distance: 150, points: 100 }, // Meh
+            { distance: 175, points: 50 }, // SHIT
+            { distance: 250, points: 0, isBadHit: true }, // this one is genuinely hard to get
         ];
 
-        this.pointRange = Math.max(...this.gameSettings.points.map(i => i.distance));
+        this.points = this.gameSettings.points.map(i => ({ distance: i.distance * this.pointDistanceMultiplier, points: i.points }));
+        this.sliderPoints = this.gameSettings.points.map(i => ({ distance: i.distance * this.sliderPointDistanceMultiplier, points: i.points }));
+
+        this.pointRange = Math.max(...this.points.map(i => i.distance));
+        this.sliderPointRange = Math.max(...this.sliderPoints.map(i => i.distance));
 
         this.health = this.gameSettings.defaultHealth;
         this.score = 0;
@@ -249,7 +254,6 @@ class Game {
                     this.gameTimeout(async () => {
                         // Start audio
                         const startTime = Date.now();
-                        // if (this.backgroundIsVideo) this.elements.background.play();
                         if (this.backgroundIsVideo) await this.elements.background.play();
                         this.elements.background.currentTime = (Date.now() - startTime) / 1000;
                         await this.playAudio("music", {
@@ -312,7 +316,7 @@ class Game {
                                 const date = Date.now();
                                 if (date > note.holdStart + this.gameSettings.sliderComboIncrementInterval && (date - note.holdStart) % this.gameSettings.sliderComboIncrementInterval <= deltaTime) this.updateCombo(); // TODO: pretty inaccurate and broken
                             } else
-                                if (this.getNoteDistance(lane, note, true) > this.pointRange) {
+                                if (this.getNoteDistance(lane, note, true) > this.sliderPointRange) {
                                     // Held too long
                                     this.miss();
                                     this.removeNote(lane, note);
@@ -328,14 +332,14 @@ class Game {
                             note.element.style.top = `${Math.round(note.top)}px`; // Set top
                             // console.log(note.top)
 
-                            if (note.passedKey && this.getNoteDistance(lane, note) > this.pointRange && !note.finished) {
+                            if (note.passedKey && this.getNoteDistance(lane, note) > this.sliderPointRange && !note.finished) {
                                 // Missed slider
                                 note.finished = true;
                                 this.miss();
                             }
                         }
 
-                        if (note.endPassedKey && this.getNoteDistance(lane, note, true) > this.pointRange) {
+                        if (note.endPassedKey && this.getNoteDistance(lane, note, true) > this.sliderPointRange) {
                             // End of slider passed
                             if (!note.finished) this.miss();
                             this.removeNote(lane, note);
@@ -462,6 +466,7 @@ class Game {
     }
 
     miss() {
+        // TODO: miss asset
         if (this.combo) this.playSfx("combo-break");
         this.misses++;
         this.health = Math.max(0, this.health - 1);
@@ -658,7 +663,7 @@ class Game {
         const closestNoteTop = this.getActualTop(closestNote);
 
         if (noteDistance > this.pointRange || closestNote.finished) return; // Ignore if closest note is still too far or has been finished
-        const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
+        const pointsToAdd = this.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
 
         this.notesHit++;
 
@@ -699,13 +704,13 @@ class Game {
         if (foundNote.isSlider) {
             if (this.gameSettings.sliderPoints) {
                 const noteDistance = this.getNoteDistance(lane, foundNote, true);
-                if (noteDistance > this.pointRange) {
+                if (noteDistance > this.sliderPointRange) {
                     // Miss if still too far from end
                     foundNote.finished = true;
                     return this.miss();
                 }
 
-                const pointsToAdd = this.gameSettings.points.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
+                const pointsToAdd = this.sliderPoints.reduce((prev, curr) => Math.abs(curr.distance - noteDistance) < Math.abs(prev.distance - noteDistance) ? curr : prev);
 
                 this.slidersFinished++;
 
